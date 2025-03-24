@@ -7,7 +7,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// TODO move to shared library
 func DeferRollback(tx pgx.Tx, ctx context.Context) {
 	err := tx.Rollback(ctx)
 	if err != nil {

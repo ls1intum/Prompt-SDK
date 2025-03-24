@@ -7,7 +7,6 @@ import (
 )
 
 func CORS(clientHost string) gin.HandlerFunc {
-	// if not localhost add https
 	if !strings.HasPrefix(clientHost, "http://") && !strings.HasPrefix(clientHost, "https://") {
 		clientHost = "https://" + clientHost
 	}
