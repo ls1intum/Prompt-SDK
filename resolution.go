@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -50,16 +51,16 @@ type CoursePhaseParticipationsWithResolutions struct {
 	Resolutions    []Resolution               `json:"resolutions"`
 }
 
-func FetchAndMergeParticipationsWithResolutions(coreURL string, authHeader string, coursePhaseID uuid.UUID) ([]GetAllCPPsForCoursePhase, error) {
-	url := fmt.Sprintf("%s/course_phases/%s/participations", coreURL, coursePhaseID)
-	request, err := http.NewRequest("GET", url, nil)
+// fetchJSON performs an HTTP GET request to the given URL with the auth header,
+// checks for a successful response, and returns the body.
+func fetchJSON(url, authHeader string) ([]byte, error) {
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
-	request.Header.Set("Authorization", authHeader)
+	req.Header.Set("Authorization", authHeader)
 
-	client := &http.Client{}
-	resp, err := client.Do(request)
+	resp, err := (&http.Client{}).Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +70,91 @@ func FetchAndMergeParticipationsWithResolutions(coreURL string, authHeader strin
 		return nil, fmt.Errorf("received non-200 response: %d", resp.StatusCode)
 	}
 
-	data, err := io.ReadAll(resp.Body)
+	return io.ReadAll(resp.Body)
+}
+
+// buildURL constructs the request URL for a given resolution.
+// extraPaths (such as a courseParticipationID) can be appended.
+func buildURL(resolution Resolution, extraPaths ...string) string {
+	base := fmt.Sprintf("%s/course_phase/%s/%s", resolution.BaseURL, resolution.CoursePhaseID, getEndpointPath(resolution.EndpointPath))
+	if len(extraPaths) > 0 {
+		base = fmt.Sprintf("%s/%s", base, strings.Join(extraPaths, "/"))
+	}
+	return base
+}
+
+// parseAndValidate unmarshals the data into a map and ensures the expected key exists.
+func parseAndValidate(data []byte, dtoName string) (interface{}, error) {
+	var result map[string]interface{}
+	if err := json.Unmarshal(data, &result); err != nil {
+		return nil, err
+	}
+
+	value, ok := result[dtoName]
+	if !ok {
+		log.Error("Failed to find expected key in response: ", dtoName)
+		return nil, fmt.Errorf("failed to find expected key in response: %s", dtoName)
+	}
+	return value, nil
+}
+
+// ResolveParticipation resolves data for a single course participation.
+func ResolveParticipation(authHeader string, resolution Resolution, courseParticipationID uuid.UUID) (interface{}, error) {
+	url := buildURL(resolution, courseParticipationID.String())
+	data, err := fetchJSON(url, authHeader)
+	if err != nil {
+		return nil, err
+	}
+
+	return parseAndValidate(data, resolution.DtoName)
+}
+
+// ResolveCoursePhaseData resolves data for a course phase.
+func ResolveCoursePhaseData(authHeader string, resolution Resolution) (interface{}, error) {
+	url := buildURL(resolution)
+	data, err := fetchJSON(url, authHeader)
+	if err != nil {
+		return nil, err
+	}
+
+	return parseAndValidate(data, resolution.DtoName)
+}
+
+// ResolveAllParticipations resolves data for all participations and returns a map keyed by courseParticipationID.
+func ResolveAllParticipations(authHeader string, resolution Resolution) (map[uuid.UUID]interface{}, error) {
+	url := buildURL(resolution)
+	data, err := fetchJSON(url, authHeader)
+	if err != nil {
+		return nil, err
+	}
+
+	var results []map[string]interface{}
+	if err := json.Unmarshal(data, &results); err != nil {
+		return nil, err
+	}
+
+	formattedResults := make(map[uuid.UUID]interface{})
+	for _, item := range results {
+		idStr, ok := item["courseParticipationID"].(string)
+		if !ok {
+			log.Error("Failed to cast courseParticipationID to string")
+			return nil, fmt.Errorf("failed to cast courseParticipationID to string")
+		}
+		participationID, err := uuid.Parse(idStr)
+		if err != nil {
+			log.Error("Failed to parse courseParticipationID: ", err)
+			return nil, fmt.Errorf("failed to parse courseParticipationID: %v", err)
+		}
+		formattedResults[participationID] = item[resolution.DtoName]
+	}
+
+	return formattedResults, nil
+}
+
+// FetchAndMergeParticipationsWithResolutions fetches participations and enriches each with resolved data.
+func FetchAndMergeParticipationsWithResolutions(coreURL string, authHeader string, coursePhaseID uuid.UUID) ([]GetAllCPPsForCoursePhase, error) {
+	url := fmt.Sprintf("%s/api/course_phases/%s/participations", coreURL, coursePhaseID)
+	data, err := fetchJSON(url, authHeader)
 	if err != nil {
 		return nil, err
 	}
@@ -80,16 +165,12 @@ func FetchAndMergeParticipationsWithResolutions(coreURL string, authHeader strin
 	}
 
 	for _, res := range cppWithRes.Resolutions {
-		resolvedDataMap, err := ResolveAllParticipations(authHeader, res)
+		resolvedData, err := ResolveAllParticipations(authHeader, res)
 		if err != nil {
 			return nil, err
 		}
 
-		resolvedData, ok := resolvedDataMap.(map[uuid.UUID]interface{})
-		if !ok {
-			log.Error("Failed to cast resolved data to map[uuid.UUID]interface{}")
-			continue
-		}
+		log.Info("Resolved data for resolution: ", resolvedData)
 
 		for idx, participation := range cppWithRes.Participations {
 			if data, exists := resolvedData[participation.CourseParticipationID]; exists {
@@ -105,111 +186,7 @@ func FetchAndMergeParticipationsWithResolutions(coreURL string, authHeader strin
 	return cppWithRes.Participations, nil
 }
 
-func ResolveParticipation(authHeader string, resolution Resolution, courseParticipationID uuid.UUID) (interface{}, error) {
-	url := fmt.Sprintf("%s/coursePhase/%s/%s/%s", resolution.BaseURL, resolution.CoursePhaseID, resolution.EndpointPath, courseParticipationID)
-	request, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-	request.Header.Set("Authorization", authHeader)
-
-	client := &http.Client{}
-	resp, err := client.Do(request)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("received non-200 response: %d", resp.StatusCode)
-	}
-
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	var result map[string]interface{}
-	if err := json.Unmarshal(data, &result); err != nil {
-		return nil, err
-	}
-
-	return result[resolution.DtoName], nil
-}
-
-func ResolveAllParticipations(authHeader string, resolution Resolution) (interface{}, error) {
-	url := fmt.Sprintf("%s/coursePhase/%s/%s", resolution.BaseURL, resolution.CoursePhaseID, resolution.EndpointPath)
-	request, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-	request.Header.Set("Authorization", authHeader)
-
-	client := &http.Client{}
-	resp, err := client.Do(request)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("received non-200 response: %d", resp.StatusCode)
-	}
-
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	var results []map[string]interface{}
-	if err := json.Unmarshal(data, &results); err != nil {
-		return nil, err
-	}
-
-	formattedResults := make(map[uuid.UUID]interface{})
-	for _, item := range results {
-		idStr, ok := item["coursePhaseParticipationID"].(string)
-		if !ok {
-			continue
-		}
-		participationID, err := uuid.Parse(idStr)
-		if err != nil {
-			continue
-		}
-		formattedResults[participationID] = item[resolution.DtoName]
-	}
-
-	return formattedResults, nil
-}
-
-func ResolveCoursePhaseData(authHeader string, resolution Resolution) (interface{}, error) {
-	url := fmt.Sprintf("%s/coursePhase/%s/%s", resolution.BaseURL, resolution.CoursePhaseID, resolution.EndpointPath)
-	request, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-	request.Header.Set("Authorization", authHeader)
-
-	client := &http.Client{}
-	resp, err := client.Do(request)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("received non-200 response: %d", resp.StatusCode)
-	}
-
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	var result map[string]interface{}
-	if err := json.Unmarshal(data, &result); err != nil {
-		return nil, err
-	}
-
-	return result[resolution.DtoName], nil
+// getEndpointPath trims leading and trailing slashes from the endpoint path.
+func getEndpointPath(endpointPath string) string {
+	return strings.Trim(endpointPath, "/")
 }
