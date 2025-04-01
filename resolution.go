@@ -51,6 +51,11 @@ type CoursePhaseParticipationsWithResolutions struct {
 	Resolutions    []Resolution               `json:"resolutions"`
 }
 
+type PrevCoursePhaseData struct {
+	PrevData    MetaData     `json:"prevData"`
+	Resolutions []Resolution `json:"resolutions"`
+}
+
 // fetchJSON performs an HTTP GET request to the given URL with the auth header,
 // checks for a successful response, and returns the body.
 func fetchJSON(url, authHeader string) ([]byte, error) {
@@ -170,8 +175,6 @@ func FetchAndMergeParticipationsWithResolutions(coreURL string, authHeader strin
 			return nil, err
 		}
 
-		log.Info("Resolved data for resolution: ", resolvedData)
-
 		for idx, participation := range cppWithRes.Participations {
 			if data, exists := resolvedData[participation.CourseParticipationID]; exists {
 				if participation.PrevData == nil {
@@ -184,6 +187,32 @@ func FetchAndMergeParticipationsWithResolutions(coreURL string, authHeader strin
 	}
 
 	return cppWithRes.Participations, nil
+}
+
+func FetchAndMergeCoursePhaseWithResolution(coreURL string, authHeader string, coursePhaseID uuid.UUID) (MetaData, error) {
+	url := fmt.Sprintf("%s/api/course_phases/%s/course_phase_data", coreURL, coursePhaseID)
+	data, err := fetchJSON(url, authHeader)
+	if err != nil {
+		return nil, err
+	}
+
+	var cpWithRes PrevCoursePhaseData
+	if err := json.Unmarshal(data, &cpWithRes); err != nil {
+		return nil, err
+	}
+
+	if cpWithRes.PrevData == nil {
+		cpWithRes.PrevData = make(MetaData)
+	}
+
+	for _, res := range cpWithRes.Resolutions {
+		resolvedData, err := ResolveCoursePhaseData(authHeader, res)
+		if err != nil {
+			return nil, err
+		}
+		cpWithRes.PrevData[res.DtoName] = resolvedData
+	}
+	return cpWithRes.PrevData, nil
 }
 
 // getEndpointPath trims leading and trailing slashes from the endpoint path.
