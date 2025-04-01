@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -65,7 +66,9 @@ func fetchJSON(url, authHeader string) ([]byte, error) {
 	}
 	req.Header.Set("Authorization", authHeader)
 
-	resp, err := (&http.Client{}).Do(req)
+	resp, err := (&http.Client{
+		Timeout: 10 * time.Second,
+	}).Do(req)
 	if err != nil {
 		return nil, err
 	}
