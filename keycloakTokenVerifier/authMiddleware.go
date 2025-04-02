@@ -39,6 +39,12 @@ func AuthenticationMiddleware(allowedRoles ...string) gin.HandlerFunc {
 			return
 		}
 
+		// This allows to use the middleware without coursePhaseID, if only PROMPT_Admin & PROMPT_Lecturer are allowed.
+		if onlyContainsAdminAndLecturer(allowedSet) {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "could not authenticate"})
+			return
+		}
+
 		// 2.) Check for Lecturer, Editor, or custom group roles.
 		if requiresLecturerOrCustom(allowedSet, allowedRoles) {
 			getLecturerAndEditorRole()(c)
@@ -162,4 +168,15 @@ func containsCustomRoleName(allowedRoles ...string) bool {
 	}
 
 	return false
+}
+
+// onlyContainsAdminAndLecturer returns true if the allowedSet only contains
+// "PROMPT_Admin" and/or "PROMPT_Lecturer".
+func onlyContainsAdminAndLecturer(allowedSet map[string]struct{}) bool {
+	for role := range allowedSet {
+		if role != "PROMPT_Admin" && role != "PROMPT_Lecturer" {
+			return false
+		}
+	}
+	return true
 }
