@@ -19,3 +19,7 @@ func DeferDBRollback(tx pgx.Tx, ctx context.Context) {
 func GetEnv(key, defaultValue string) string {
 	return utils.GetEnv(key, defaultValue)
 }
+
+func FetchJSON(url, authHeader string) ([]byte, error) {
+	return utils.FetchJSON(url, authHeader)
+}

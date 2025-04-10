@@ -3,10 +3,7 @@ package promptSDK
 import (
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"strings"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -57,30 +54,6 @@ type PrevCoursePhaseData struct {
 	Resolutions []Resolution `json:"resolutions"`
 }
 
-// fetchJSON performs an HTTP GET request to the given URL with the auth header,
-// checks for a successful response, and returns the body.
-func fetchJSON(url, authHeader string) ([]byte, error) {
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Authorization", authHeader)
-
-	resp, err := (&http.Client{
-		Timeout: 10 * time.Second,
-	}).Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("received non-200 response: %d", resp.StatusCode)
-	}
-
-	return io.ReadAll(resp.Body)
-}
-
 // buildURL constructs the request URL for a given resolution.
 // extraPaths (such as a courseParticipationID) can be appended.
 func buildURL(resolution Resolution, extraPaths ...string) string {
@@ -109,7 +82,7 @@ func parseAndValidate(data []byte, dtoName string) (interface{}, error) {
 // ResolveParticipation resolves data for a single course participation.
 func ResolveParticipation(authHeader string, resolution Resolution, courseParticipationID uuid.UUID) (interface{}, error) {
 	url := buildURL(resolution, courseParticipationID.String())
-	data, err := fetchJSON(url, authHeader)
+	data, err := FetchJSON(url, authHeader)
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +93,7 @@ func ResolveParticipation(authHeader string, resolution Resolution, coursePartic
 // ResolveCoursePhaseData resolves data for a course phase.
 func ResolveCoursePhaseData(authHeader string, resolution Resolution) (interface{}, error) {
 	url := buildURL(resolution)
-	data, err := fetchJSON(url, authHeader)
+	data, err := FetchJSON(url, authHeader)
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +104,7 @@ func ResolveCoursePhaseData(authHeader string, resolution Resolution) (interface
 // ResolveAllParticipations resolves data for all participations and returns a map keyed by courseParticipationID.
 func ResolveAllParticipations(authHeader string, resolution Resolution) (map[uuid.UUID]interface{}, error) {
 	url := buildURL(resolution)
-	data, err := fetchJSON(url, authHeader)
+	data, err := FetchJSON(url, authHeader)
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +135,7 @@ func ResolveAllParticipations(authHeader string, resolution Resolution) (map[uui
 // FetchAndMergeParticipationsWithResolutions fetches participations and enriches each with resolved data.
 func FetchAndMergeParticipationsWithResolutions(coreURL string, authHeader string, coursePhaseID uuid.UUID) ([]GetAllCPPsForCoursePhase, error) {
 	url := fmt.Sprintf("%s/api/course_phases/%s/participations", coreURL, coursePhaseID)
-	data, err := fetchJSON(url, authHeader)
+	data, err := FetchJSON(url, authHeader)
 	if err != nil {
 		return nil, err
 	}
@@ -194,7 +167,7 @@ func FetchAndMergeParticipationsWithResolutions(coreURL string, authHeader strin
 
 func FetchAndMergeCoursePhaseWithResolution(coreURL string, authHeader string, coursePhaseID uuid.UUID) (MetaData, error) {
 	url := fmt.Sprintf("%s/api/course_phases/%s/course_phase_data", coreURL, coursePhaseID)
-	data, err := fetchJSON(url, authHeader)
+	data, err := FetchJSON(url, authHeader)
 	if err != nil {
 		return nil, err
 	}
