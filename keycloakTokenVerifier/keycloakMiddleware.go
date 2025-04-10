@@ -12,7 +12,7 @@ import (
 )
 
 // Validates the token and extracts the claims from the token.
-func keycloakMiddleware() gin.HandlerFunc {
+func KeycloakMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tokenString, err := extractBearerToken(c)
 		if err != nil {
