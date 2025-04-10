@@ -19,7 +19,7 @@ import (
 func AuthenticationMiddleware(allowedRoles ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Always run Keycloak middleware first.
-		keycloakMiddleware()(c)
+		KeycloakMiddleware()(c)
 		if c.IsAborted() {
 			return
 		}
