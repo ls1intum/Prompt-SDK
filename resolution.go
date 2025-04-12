@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/ls1intum/prompt-sdk/promptTypes"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -17,41 +17,14 @@ type Resolution struct {
 	CoursePhaseID uuid.UUID
 }
 
-type MetaData map[string]interface{}
-
-type Student struct {
-	ID                   uuid.UUID   `json:"id"`
-	FirstName            string      `json:"firstName"`
-	LastName             string      `json:"lastName"`
-	Email                string      `json:"email"`
-	MatriculationNumber  string      `json:"matriculationNumber"`
-	UniversityLogin      string      `json:"universityLogin"`
-	HasUniversityAccount bool        `json:"hasUniversityAccount"`
-	Gender               string      `json:"gender"` // for simplicity we map the enum to a string here
-	Nationality          string      `json:"nationality"`
-	StudyDegree          string      `json:"studyDegree"` // for simplicity we map the enum to a string here
-	StudyProgram         string      `json:"studyProgram"`
-	CurrentSemester      pgtype.Int4 `json:"currentSemester"`
-}
-
-type GetAllCPPsForCoursePhase struct {
-	CoursePhaseID         uuid.UUID `json:"coursePhaseID"`
-	PassStatus            string    `json:"passStatus"`
-	CourseParticipationID uuid.UUID `json:"courseParticipationID"`
-	RestrictedData        MetaData  `json:"restrictedData"`
-	StudentReadableData   MetaData  `json:"studentReadableData"`
-	PrevData              MetaData  `json:"prevData"`
-	Student               Student   `json:"student"`
-}
-
 type CoursePhaseParticipationsWithResolutions struct {
-	Participations []GetAllCPPsForCoursePhase `json:"participations"`
-	Resolutions    []Resolution               `json:"resolutions"`
+	Participations []promptTypes.CoursePhaseParticipationWithStudent `json:"participations"`
+	Resolutions    []Resolution                                      `json:"resolutions"`
 }
 
 type PrevCoursePhaseData struct {
-	PrevData    MetaData     `json:"prevData"`
-	Resolutions []Resolution `json:"resolutions"`
+	PrevData    promptTypes.MetaData `json:"prevData"`
+	Resolutions []Resolution         `json:"resolutions"`
 }
 
 // buildURL constructs the request URL for a given resolution.
@@ -133,7 +106,7 @@ func ResolveAllParticipations(authHeader string, resolution Resolution) (map[uui
 }
 
 // FetchAndMergeParticipationsWithResolutions fetches participations and enriches each with resolved data.
-func FetchAndMergeParticipationsWithResolutions(coreURL string, authHeader string, coursePhaseID uuid.UUID) ([]GetAllCPPsForCoursePhase, error) {
+func FetchAndMergeParticipationsWithResolutions(coreURL string, authHeader string, coursePhaseID uuid.UUID) ([]promptTypes.CoursePhaseParticipationWithStudent, error) {
 	url := fmt.Sprintf("%s/api/course_phases/%s/participations", coreURL, coursePhaseID)
 	data, err := FetchJSON(url, authHeader)
 	if err != nil {
@@ -154,7 +127,7 @@ func FetchAndMergeParticipationsWithResolutions(coreURL string, authHeader strin
 		for idx, participation := range cppWithRes.Participations {
 			if data, exists := resolvedData[participation.CourseParticipationID]; exists {
 				if participation.PrevData == nil {
-					participation.PrevData = make(MetaData)
+					participation.PrevData = make(promptTypes.MetaData)
 				}
 				participation.PrevData[res.DtoName] = data
 				cppWithRes.Participations[idx] = participation
@@ -165,7 +138,7 @@ func FetchAndMergeParticipationsWithResolutions(coreURL string, authHeader strin
 	return cppWithRes.Participations, nil
 }
 
-func FetchAndMergeCoursePhaseWithResolution(coreURL string, authHeader string, coursePhaseID uuid.UUID) (MetaData, error) {
+func FetchAndMergeCoursePhaseWithResolution(coreURL string, authHeader string, coursePhaseID uuid.UUID) (promptTypes.MetaData, error) {
 	url := fmt.Sprintf("%s/api/course_phases/%s/course_phase_data", coreURL, coursePhaseID)
 	data, err := FetchJSON(url, authHeader)
 	if err != nil {
@@ -178,7 +151,7 @@ func FetchAndMergeCoursePhaseWithResolution(coreURL string, authHeader string, c
 	}
 
 	if cpWithRes.PrevData == nil {
-		cpWithRes.PrevData = make(MetaData)
+		cpWithRes.PrevData = make(promptTypes.MetaData)
 	}
 
 	for _, res := range cpWithRes.Resolutions {
