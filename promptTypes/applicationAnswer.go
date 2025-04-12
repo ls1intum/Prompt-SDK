@@ -32,7 +32,7 @@ type rawAnswer struct {
 	Key      string      `json:"key"`
 }
 
-// Allows to parse the answers from the metadata of in any later phase.
+// Allows to parse the answers from the metadata in any later phase.
 // 1) []AnswersText for type="text"
 // 2) []AnswersMultiSelect for type="multiselect"
 func ReadApplicationAnswersFromMetaData(data interface{}) ([]AnswersText, []AnswersMultiSelect, error) {
