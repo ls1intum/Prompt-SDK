@@ -52,10 +52,10 @@ func getLecturerAndEditorRole() gin.HandlerFunc {
 
 		// filter out the roles relevant for the current course phase
 		isLecturer := userRoles[tokenMapping.CourseLecturerRole]
-		isTutor := userRoles[tokenMapping.CourseEditorRole]
+		isEditor := userRoles[tokenMapping.CourseEditorRole]
 
 		c.Set("isLecturer", isLecturer)
-		c.Set("isTutor", isTutor)
+		c.Set("isEditor", isEditor)
 		c.Set("customRolePrefix", tokenMapping.CustomRolePrefix)
 	}
 }
