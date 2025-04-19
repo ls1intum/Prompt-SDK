@@ -27,15 +27,61 @@ type PrevCoursePhaseData struct {
 	Resolutions []Resolution         `json:"resolutions"`
 }
 
+// ────────────────────────────────────────────────────────────────────────────────
+// URL helpers
+// ────────────────────────────────────────────────────────────────────────────────
+
+// transformBaseURL rewrites service URLs so that they point to the internal
+// Docker network instead of the public host.  Extend the slice below to add
+// more rules (pattern → replacement).
+func transformBaseURL(baseURL string) string {
+	rewriteRules := []struct {
+		pattern     string
+		replacement string
+	}{
+		// team‑allocation service
+		{"/team-allocation/api", "http://server-team-allocation/team-allocation-api"},
+		// intro‑course service
+		{"/intro-course/api", "http://server-intro-course/intro-course/api"},
+		{"/assessment/api", "http://server-assessment/assessment/api"},
+	}
+
+	for _, r := range rewriteRules {
+		if strings.Contains(baseURL, r.pattern) {
+			return r.replacement
+		}
+	}
+	return baseURL // nothing matched – keep original
+}
+
 // buildURL constructs the request URL for a given resolution.
 // extraPaths (such as a courseParticipationID) can be appended.
-func buildURL(resolution Resolution, extraPaths ...string) string {
-	base := fmt.Sprintf("%s/course_phase/%s/%s", resolution.BaseURL, resolution.CoursePhaseID, getEndpointPath(resolution.EndpointPath))
-	if len(extraPaths) > 0 {
-		base = fmt.Sprintf("%s/%s", base, strings.Join(extraPaths, "/"))
+func buildURL(resolution Resolution, resolveLocally bool, extraPaths ...string) string {
+	baseURL := resolution.BaseURL
+	if resolveLocally {
+		baseURL = transformBaseURL(baseURL)
 	}
-	return base
+
+	url := fmt.Sprintf("%s/course_phase/%s/%s",
+		baseURL,
+		resolution.CoursePhaseID,
+		getEndpointPath(resolution.EndpointPath),
+	)
+
+	if len(extraPaths) > 0 {
+		url = fmt.Sprintf("%s/%s", url, strings.Join(extraPaths, "/"))
+	}
+	return url
 }
+
+// getEndpointPath trims leading and trailing slashes from the endpoint path.
+func getEndpointPath(endpointPath string) string {
+	return strings.Trim(endpointPath, "/")
+}
+
+// ────────────────────────────────────────────────────────────────────────────────
+// Response helpers
+// ────────────────────────────────────────────────────────────────────────────────
 
 // parseAndValidate unmarshals the data into a map and ensures the expected key exists.
 func parseAndValidate(data []byte, dtoName string) (interface{}, error) {
@@ -53,8 +99,8 @@ func parseAndValidate(data []byte, dtoName string) (interface{}, error) {
 }
 
 // ResolveParticipation resolves data for a single course participation.
-func ResolveParticipation(authHeader string, resolution Resolution, courseParticipationID uuid.UUID) (interface{}, error) {
-	url := buildURL(resolution, courseParticipationID.String())
+func ResolveParticipation(authHeader string, resolution Resolution, courseParticipationID uuid.UUID, resolveLocally bool) (interface{}, error) {
+	url := buildURL(resolution, resolveLocally, courseParticipationID.String())
 	data, err := FetchJSON(url, authHeader)
 	if err != nil {
 		return nil, err
@@ -64,8 +110,8 @@ func ResolveParticipation(authHeader string, resolution Resolution, coursePartic
 }
 
 // ResolveCoursePhaseData resolves data for a course phase.
-func ResolveCoursePhaseData(authHeader string, resolution Resolution) (interface{}, error) {
-	url := buildURL(resolution)
+func ResolveCoursePhaseData(authHeader string, resolution Resolution, resolveLocally bool) (interface{}, error) {
+	url := buildURL(resolution, resolveLocally)
 	data, err := FetchJSON(url, authHeader)
 	if err != nil {
 		return nil, err
@@ -75,8 +121,8 @@ func ResolveCoursePhaseData(authHeader string, resolution Resolution) (interface
 }
 
 // ResolveAllParticipations resolves data for all participations and returns a map keyed by courseParticipationID.
-func ResolveAllParticipations(authHeader string, resolution Resolution) (map[uuid.UUID]interface{}, error) {
-	url := buildURL(resolution)
+func ResolveAllParticipations(authHeader string, resolution Resolution, resolveLocally bool) (map[uuid.UUID]interface{}, error) {
+	url := buildURL(resolution, resolveLocally)
 	data, err := FetchJSON(url, authHeader)
 	if err != nil {
 		return nil, err
@@ -106,39 +152,39 @@ func ResolveAllParticipations(authHeader string, resolution Resolution) (map[uui
 }
 
 // FetchAndMergeParticipationsWithResolutions fetches participations and enriches each with resolved data.
-func FetchAndMergeParticipationsWithResolutions(coreURL string, authHeader string, coursePhaseID uuid.UUID) ([]promptTypes.CoursePhaseParticipationWithStudent, error) {
+func FetchAndMergeParticipationsWithResolutions(coreURL string, authHeader string, coursePhaseID uuid.UUID, resolveLocally bool) ([]promptTypes.CoursePhaseParticipationWithStudent, error) {
+
 	url := fmt.Sprintf("%s/api/course_phases/%s/participations", coreURL, coursePhaseID)
 	data, err := FetchJSON(url, authHeader)
 	if err != nil {
 		return nil, err
 	}
 
-	var cppWithRes CoursePhaseParticipationsWithResolutions
-	if err := json.Unmarshal(data, &cppWithRes); err != nil {
+	var payload CoursePhaseParticipationsWithResolutions
+	if err := json.Unmarshal(data, &payload); err != nil {
 		return nil, err
 	}
 
-	for _, res := range cppWithRes.Resolutions {
-		resolvedData, err := ResolveAllParticipations(authHeader, res)
+	for _, res := range payload.Resolutions {
+		resolved, err := ResolveAllParticipations(authHeader, res, resolveLocally)
 		if err != nil {
 			return nil, err
 		}
 
-		for idx, participation := range cppWithRes.Participations {
-			if data, exists := resolvedData[participation.CourseParticipationID]; exists {
-				if participation.PrevData == nil {
-					participation.PrevData = make(promptTypes.MetaData)
+		for i, p := range payload.Participations {
+			if val, ok := resolved[p.CourseParticipationID]; ok {
+				if p.PrevData == nil {
+					p.PrevData = make(promptTypes.MetaData)
 				}
-				participation.PrevData[res.DtoName] = data
-				cppWithRes.Participations[idx] = participation
+				p.PrevData[res.DtoName] = val
+				payload.Participations[i] = p
 			}
 		}
 	}
-
-	return cppWithRes.Participations, nil
+	return payload.Participations, nil
 }
 
-func FetchAndMergeCoursePhaseWithResolution(coreURL string, authHeader string, coursePhaseID uuid.UUID) (promptTypes.MetaData, error) {
+func FetchAndMergeCoursePhaseWithResolution(coreURL string, authHeader string, coursePhaseID uuid.UUID, resolveLocally bool) (promptTypes.MetaData, error) {
 	url := fmt.Sprintf("%s/api/course_phases/%s/course_phase_data", coreURL, coursePhaseID)
 	data, err := FetchJSON(url, authHeader)
 	if err != nil {
@@ -155,16 +201,11 @@ func FetchAndMergeCoursePhaseWithResolution(coreURL string, authHeader string, c
 	}
 
 	for _, res := range cpWithRes.Resolutions {
-		resolvedData, err := ResolveCoursePhaseData(authHeader, res)
+		resolvedData, err := ResolveCoursePhaseData(authHeader, res, resolveLocally)
 		if err != nil {
 			return nil, err
 		}
 		cpWithRes.PrevData[res.DtoName] = resolvedData
 	}
 	return cpWithRes.PrevData, nil
-}
-
-// getEndpointPath trims leading and trailing slashes from the endpoint path.
-func getEndpointPath(endpointPath string) string {
-	return strings.Trim(endpointPath, "/")
 }
