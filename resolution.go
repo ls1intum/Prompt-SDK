@@ -3,6 +3,7 @@ package promptSDK
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/google/uuid"
@@ -12,7 +13,7 @@ import (
 
 type Resolution struct {
 	DtoName       string
-	BaseURL       string
+	BaseURL       url.URL
 	EndpointPath  string
 	CoursePhaseID uuid.UUID
 }
@@ -30,11 +31,14 @@ type PrevCoursePhaseData struct {
 // buildURL constructs the request URL for a given resolution.
 // extraPaths (such as a courseParticipationID) can be appended.
 func buildURL(resolution Resolution, extraPaths ...string) string {
-	base := fmt.Sprintf("%s/course_phase/%s/%s", resolution.BaseURL, resolution.CoursePhaseID, getEndpointPath(resolution.EndpointPath))
-	if len(extraPaths) > 0 {
-		base = fmt.Sprintf("%s/%s", base, strings.Join(extraPaths, "/"))
-	}
-	return base
+	allPaths := append([]string{
+		"course_phase",
+		resolution.CoursePhaseID.String(),
+		getEndpointPath(resolution.EndpointPath),
+	}, extraPaths...)
+
+	u := resolution.BaseURL.JoinPath(allPaths...)
+	return u.String()
 }
 
 // parseAndValidate unmarshals the data into a map and ensures the expected key exists.
@@ -107,7 +111,10 @@ func ResolveAllParticipations(authHeader string, resolution Resolution) (map[uui
 
 // FetchAndMergeParticipationsWithResolutions fetches participations and enriches each with resolved data.
 func FetchAndMergeParticipationsWithResolutions(coreURL string, authHeader string, coursePhaseID uuid.UUID) ([]promptTypes.CoursePhaseParticipationWithStudent, error) {
-	url := fmt.Sprintf("%s/api/course_phases/%s/participations", coreURL, coursePhaseID)
+	url, err := url.JoinPath(coreURL, "api/course_phases", coursePhaseID.String(), "participations")
+	if err != nil {
+		return nil, err
+	}
 	data, err := FetchJSON(url, authHeader)
 	if err != nil {
 		return nil, err
@@ -139,7 +146,10 @@ func FetchAndMergeParticipationsWithResolutions(coreURL string, authHeader strin
 }
 
 func FetchAndMergeCoursePhaseWithResolution(coreURL string, authHeader string, coursePhaseID uuid.UUID) (promptTypes.MetaData, error) {
-	url := fmt.Sprintf("%s/api/course_phases/%s/course_phase_data", coreURL, coursePhaseID)
+	url, err := url.JoinPath(coreURL, "api/course_phases", coursePhaseID.String(), "course_phase_data")
+	if err != nil {
+		return nil, err
+	}
 	data, err := FetchJSON(url, authHeader)
 	if err != nil {
 		return nil, err
