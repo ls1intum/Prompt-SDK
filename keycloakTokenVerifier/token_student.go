@@ -1,11 +1,15 @@
 package keycloakTokenVerifier
 
 import (
+	"errors"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
 
 const tokenStudentContextKey = "token_student"
+
+var ErrStudentNotInContext = errors.New("student not found in context")
 
 type TokenStudent struct {
 	Roles               map[string]bool
@@ -27,7 +31,11 @@ type TokenStudent struct {
 
 func GetTokenStudent(c *gin.Context) (TokenStudent, bool) {
 	if tokenStudent, exists := c.Get(tokenStudentContextKey); exists {
-		return tokenStudent.(TokenStudent), true
+		ts, ok := tokenStudent.(TokenStudent)
+		if !ok {
+			return TokenStudent{}, false
+		}
+		return ts, true
 	}
 	return TokenStudent{}, false
 }

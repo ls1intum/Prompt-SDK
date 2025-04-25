@@ -28,7 +28,7 @@ func AuthenticationMiddleware(allowedRoles ...string) gin.HandlerFunc {
 		token_student, ok := GetTokenStudent(c)
 		if !ok {
 			log.Error("Error getting token student")
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "could not authenticate"})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, ErrStudentNotInContext)
 			return
 		}
 		userRoles := token_student.Roles
@@ -50,6 +50,13 @@ func AuthenticationMiddleware(allowedRoles ...string) gin.HandlerFunc {
 		if requiresLecturerOrCustom(allowedSet, allowedRoles) {
 			getLecturerAndEditorRole()(c)
 			if c.IsAborted() {
+				return
+			}
+
+			token_student, ok = GetTokenStudent(c)
+			if !ok {
+				log.Error("Error refreshing the token student")
+				c.AbortWithStatusJSON(http.StatusUnauthorized, ErrStudentNotInContext)
 				return
 			}
 
@@ -79,6 +86,13 @@ func AuthenticationMiddleware(allowedRoles ...string) gin.HandlerFunc {
 		if _, allowed := allowedSet[CourseStudent]; allowed {
 			isStudentOfCoursePhaseMiddleware()(c)
 			if c.IsAborted() {
+				return
+			}
+
+			token_student, ok = GetTokenStudent(c)
+			if !ok {
+				log.Error("Error refreshing the token student")
+				c.AbortWithStatusJSON(http.StatusUnauthorized, ErrStudentNotInContext)
 				return
 			}
 

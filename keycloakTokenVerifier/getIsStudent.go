@@ -46,8 +46,8 @@ func isStudentOfCoursePhaseMiddleware() gin.HandlerFunc {
 
 			token_student, ok := GetTokenStudent(c)
 			if !ok {
-				log.Error("Error getting token student:", err)
-				_ = c.AbortWithError(http.StatusInternalServerError, err)
+				log.Error("Error getting token student")
+				_ = c.AbortWithError(http.StatusInternalServerError, ErrStudentNotInContext)
 				return
 			}
 			token_student.IsStudentOfCourse = true
