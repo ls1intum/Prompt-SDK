@@ -81,6 +81,7 @@ func KeycloakMiddleware() gin.HandlerFunc {
 			return
 		}
 
+		// DEPRECATED: Leave this for backward compatibility
 		// Store the extracted roles in the context
 		c.Set("userRoles", userRoles)
 		c.Set("userID", userID)
@@ -89,6 +90,16 @@ func KeycloakMiddleware() gin.HandlerFunc {
 		c.Set("universityLogin", universityLogin)
 		c.Set("firstName", firstName)
 		c.Set("lastName", lastName)
+
+		SetTokenStudent(c, TokenStudent{
+			Roles:               userRoles,
+			ID:                  userID,
+			Email:               userEmail,
+			MatriculationNumber: matriculationNumber,
+			UniversityLogin:     universityLogin,
+			FirstName:           firstName,
+			LastName:            lastName,
+		})
 	}
 }
 

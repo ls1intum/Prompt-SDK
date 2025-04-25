@@ -33,8 +33,8 @@ func AuthenticationMiddleware(allowedRoles ...string) gin.HandlerFunc {
 		}
 
 		// 1.) Directly grant access for PROMPT_Admin or PROMPT_Lecturer.
-		if checkDirectRole("PROMPT_Admin", allowedSet, userRoles) ||
-			checkDirectRole("PROMPT_Lecturer", allowedSet, userRoles) {
+		if checkDirectRole(PromptAdmin, allowedSet, userRoles) ||
+			checkDirectRole(PromptLecturer, allowedSet, userRoles) {
 			c.Next()
 			return
 		}
@@ -108,15 +108,11 @@ func buildAllowedRolesSet(roles []string) map[string]struct{} {
 
 // getUserRoles retrieves the user roles from the gin.Context.
 func getUserRoles(c *gin.Context) (map[string]bool, error) {
-	val, exists := c.Get("userRoles")
-	if !exists {
-		return nil, fmt.Errorf("user roles not found")
-	}
-	roles, ok := val.(map[string]bool)
+	student, ok := GetTokenStudent(c)
 	if !ok {
-		return nil, fmt.Errorf("user roles invalid type")
+		return nil, fmt.Errorf("failed to get token student")
 	}
-	return roles, nil
+	return student.Roles, nil
 }
 
 // checkDirectRole returns true if a specific role is both allowed and present in the user roles.
@@ -139,15 +135,11 @@ func isFlagTrue(c *gin.Context, key string) bool {
 
 // getCustomRolePrefix retrieves the customRolePrefix from the gin.Context.
 func getCustomRolePrefix(c *gin.Context) (string, error) {
-	val, exists := c.Get("customRolePrefix")
-	if !exists {
-		return "", fmt.Errorf("customRolePrefix not found")
-	}
-	prefix, ok := val.(string)
+	student, ok := GetTokenStudent(c)
 	if !ok {
-		return "", fmt.Errorf("customRolePrefix invalid type")
+		return "", fmt.Errorf("failed to get token student")
 	}
-	return prefix, nil
+	return student.CustomRolePrefix, nil
 }
 
 // requiresLecturerOrCustom determines if additional checks for lecturer, editor,
@@ -174,7 +166,7 @@ func containsCustomRoleName(allowedRoles ...string) bool {
 // "PROMPT_Admin" and/or "PROMPT_Lecturer".
 func onlyContainsAdminAndLecturer(allowedSet map[string]struct{}) bool {
 	for role := range allowedSet {
-		if role != "PROMPT_Admin" && role != "PROMPT_Lecturer" {
+		if role != PromptAdmin && role != PromptLecturer {
 			return false
 		}
 	}

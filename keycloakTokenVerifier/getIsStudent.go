@@ -39,9 +39,21 @@ func isStudentOfCoursePhaseMiddleware() gin.HandlerFunc {
 				return
 			}
 		} else {
+			// DEPRECATED: Keep this for backwards compatibility
 			c.Set("isStudentOfCourse", true)
 			c.Set("isStudentOfCoursePhase", isStudentResponse.IsStudentOfCoursePhase)
 			c.Set("courseParticipationID", isStudentResponse.CourseParticipationID)
+
+			token_student, ok := GetTokenStudent(c)
+			if !ok {
+				log.Error("Error getting token student:", err)
+				_ = c.AbortWithError(http.StatusInternalServerError, err)
+				return
+			}
+			token_student.IsStudentOfCourse = true
+			token_student.IsStudentOfCoursePhase = isStudentResponse.IsStudentOfCoursePhase
+			token_student.CourseParticipationID = isStudentResponse.CourseParticipationID
+			SetTokenStudent(c, token_student)
 		}
 	}
 }
