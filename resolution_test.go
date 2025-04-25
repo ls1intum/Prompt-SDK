@@ -62,3 +62,16 @@ func TestBuildURL_WithExtraPaths(t *testing.T) {
 	want := "http://localhost:8080/v1/course_phase/00000000-0000-0000-0000-000000000000/endpoint/p1/details"
 	assert.Equal(t, want, got)
 }
+
+func TestBuildURL_WithInvalidBaseURL(t *testing.T) {
+	// Test with an invalid URL that would cause issues
+	invalidBase := url.URL{Scheme: ":%invalid"} // Invalid scheme
+	res := Resolution{
+		BaseURL:       invalidBase,
+		CoursePhaseID: uuid.New(),
+		EndpointPath:  "endpoint",
+	}
+	got := buildURL(res)
+	// Verify the function gracefully handles invalid URLs
+	assert.NotEmpty(t, got)
+}
