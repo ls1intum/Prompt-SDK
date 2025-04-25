@@ -36,13 +36,13 @@ func getLecturerAndEditorRole() gin.HandlerFunc {
 		}
 
 		// get roles from the context
-		token_student, ok := GetTokenStudent(c)
+		tokenStudent, ok := GetTokenStudent(c)
 		if !ok {
 			log.Error("Error getting token student")
 			_ = c.AbortWithError(http.StatusInternalServerError, ErrStudentNotInContext)
 			return
 		}
-		userRoles := token_student.Roles
+		userRoles := tokenStudent.Roles
 
 		// filter out the roles relevant for the current course phase
 		isLecturer := userRoles[tokenMapping.CourseLecturerRole]
@@ -53,9 +53,9 @@ func getLecturerAndEditorRole() gin.HandlerFunc {
 		c.Set("isEditor", isEditor)
 		c.Set("customRolePrefix", tokenMapping.CustomRolePrefix)
 
-		token_student.IsLecturer = isLecturer
-		token_student.IsEditor = isEditor
-		token_student.CustomRolePrefix = tokenMapping.CustomRolePrefix
-		SetTokenStudent(c, token_student)
+		tokenStudent.IsLecturer = isLecturer
+		tokenStudent.IsEditor = isEditor
+		tokenStudent.CustomRolePrefix = tokenMapping.CustomRolePrefix
+		SetTokenStudent(c, tokenStudent)
 	}
 }

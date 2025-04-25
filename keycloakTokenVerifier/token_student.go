@@ -11,6 +11,8 @@ const tokenStudentContextKey = "token_student"
 
 var ErrStudentNotInContext = errors.New("student not found in context")
 
+// TokenStudent encapsulates a user's authentication information, including roles,
+// personal identifiers, and permissions within the system.
 type TokenStudent struct {
 	Roles               map[string]bool
 	ID                  string
