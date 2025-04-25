@@ -1,7 +1,6 @@
 package keycloakTokenVerifier
 
 import (
-	"fmt"
 	"net/http"
 	"slices"
 
@@ -26,11 +25,13 @@ func AuthenticationMiddleware(allowedRoles ...string) gin.HandlerFunc {
 
 		allowedSet := buildAllowedRolesSet(allowedRoles)
 
-		userRoles, err := getUserRoles(c)
-		if err != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		token_student, ok := GetTokenStudent(c)
+		if !ok {
+			log.Error("Error getting token student")
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "could not authenticate"})
 			return
 		}
+		userRoles := token_student.Roles
 
 		// 1.) Directly grant access for PROMPT_Admin or PROMPT_Lecturer.
 		if checkDirectRole(PromptAdmin, allowedSet, userRoles) ||
@@ -52,23 +53,18 @@ func AuthenticationMiddleware(allowedRoles ...string) gin.HandlerFunc {
 				return
 			}
 
-			if _, allowed := allowedSet[CourseLecturer]; allowed && isFlagTrue(c, "isLecturer") {
+			if _, allowed := allowedSet[CourseLecturer]; allowed && token_student.IsLecturer {
 				c.Next()
 				return
 			}
 
-			if _, allowed := allowedSet[CourseEditor]; allowed && isFlagTrue(c, "isEditor") {
+			if _, allowed := allowedSet[CourseEditor]; allowed && token_student.IsEditor {
 				c.Next()
 				return
 			}
 
 			if containsCustomRoleName(allowedRoles...) {
-				prefix, err := getCustomRolePrefix(c)
-				if err != nil {
-					log.Error(err)
-					c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "could not authenticate"})
-					return
-				}
+				prefix := token_student.CustomRolePrefix
 
 				for _, role := range allowedRoles {
 					if userRoles[prefix+role] {
@@ -86,7 +82,7 @@ func AuthenticationMiddleware(allowedRoles ...string) gin.HandlerFunc {
 				return
 			}
 
-			if isFlagTrue(c, "isStudentOfCoursePhase") {
+			if token_student.IsStudentOfCourse {
 				c.Next()
 				return
 			}
@@ -106,40 +102,12 @@ func buildAllowedRolesSet(roles []string) map[string]struct{} {
 	return set
 }
 
-// getUserRoles retrieves the user roles from the gin.Context.
-func getUserRoles(c *gin.Context) (map[string]bool, error) {
-	student, ok := GetTokenStudent(c)
-	if !ok {
-		return nil, fmt.Errorf("failed to get token student")
-	}
-	return student.Roles, nil
-}
-
 // checkDirectRole returns true if a specific role is both allowed and present in the user roles.
 func checkDirectRole(role string, allowedSet map[string]struct{}, userRoles map[string]bool) bool {
 	if _, allowed := allowedSet[role]; allowed && userRoles[role] {
 		return true
 	}
 	return false
-}
-
-// isFlagTrue checks whether a boolean flag stored in the gin.Context is true.
-func isFlagTrue(c *gin.Context, key string) bool {
-	if val, exists := c.Get(key); exists {
-		if flag, ok := val.(bool); ok && flag {
-			return true
-		}
-	}
-	return false
-}
-
-// getCustomRolePrefix retrieves the customRolePrefix from the gin.Context.
-func getCustomRolePrefix(c *gin.Context) (string, error) {
-	student, ok := GetTokenStudent(c)
-	if !ok {
-		return "", fmt.Errorf("failed to get token student")
-	}
-	return student.CustomRolePrefix, nil
 }
 
 // requiresLecturerOrCustom determines if additional checks for lecturer, editor,

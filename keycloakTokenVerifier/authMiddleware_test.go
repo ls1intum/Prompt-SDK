@@ -20,22 +20,22 @@ func TestOnlyContainsAdminAndLecturer(t *testing.T) {
 		},
 		{
 			name: "only admin",
-			set:  map[string]struct{}{"PROMPT_Admin": {}},
+			set:  map[string]struct{}{PromptAdmin: {}},
 			want: true,
 		},
 		{
 			name: "only lecturer",
-			set:  map[string]struct{}{"PROMPT_Lecturer": {}},
+			set:  map[string]struct{}{PromptLecturer: {}},
 			want: true,
 		},
 		{
 			name: "admin and lecturer",
-			set:  map[string]struct{}{"PROMPT_Admin": {}, "PROMPT_Lecturer": {}},
+			set:  map[string]struct{}{PromptAdmin: {}, PromptLecturer: {}},
 			want: true,
 		},
 		{
 			name: "contains other role",
-			set:  map[string]struct{}{"PROMPT_Admin": {}, "SomeOtherRole": {}},
+			set:  map[string]struct{}{PromptAdmin: {}, "SomeOtherRole": {}},
 			want: false,
 		},
 		{
