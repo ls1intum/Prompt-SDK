@@ -9,7 +9,7 @@ import (
 
 const tokenUserContextKey = "tokenUser"
 
-var ErrStudentNotInContext = errors.New("user not found in context")
+var ErrUserNotInContext = errors.New("user not found in context")
 
 // TokenUser encapsulates a user's authentication information, including roles,
 // personal identifiers, and permissions within the system.

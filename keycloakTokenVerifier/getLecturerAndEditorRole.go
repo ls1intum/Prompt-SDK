@@ -39,7 +39,7 @@ func getLecturerAndEditorRole() gin.HandlerFunc {
 		tokenUser, ok := GetTokenUser(c)
 		if !ok {
 			log.Error("Error getting token student")
-			_ = c.AbortWithError(http.StatusInternalServerError, ErrStudentNotInContext)
+			_ = c.AbortWithError(http.StatusInternalServerError, ErrUserNotInContext)
 			return
 		}
 		userRoles := tokenUser.Roles

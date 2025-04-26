@@ -28,7 +28,7 @@ func AuthenticationMiddleware(allowedRoles ...string) gin.HandlerFunc {
 		tokenUser, ok := GetTokenUser(c)
 		if !ok {
 			log.Error("Error getting token student")
-			c.AbortWithStatusJSON(http.StatusUnauthorized, ErrStudentNotInContext)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, ErrUserNotInContext)
 			return
 		}
 		userRoles := tokenUser.Roles
@@ -56,7 +56,7 @@ func AuthenticationMiddleware(allowedRoles ...string) gin.HandlerFunc {
 			tokenUser, ok = GetTokenUser(c)
 			if !ok {
 				log.Error("Error refreshing the token student")
-				c.AbortWithStatusJSON(http.StatusUnauthorized, ErrStudentNotInContext)
+				c.AbortWithStatusJSON(http.StatusUnauthorized, ErrUserNotInContext)
 				return
 			}
 
@@ -92,7 +92,7 @@ func AuthenticationMiddleware(allowedRoles ...string) gin.HandlerFunc {
 			tokenUser, ok = GetTokenUser(c)
 			if !ok {
 				log.Error("Error refreshing the token student")
-				c.AbortWithStatusJSON(http.StatusUnauthorized, ErrStudentNotInContext)
+				c.AbortWithStatusJSON(http.StatusUnauthorized, ErrUserNotInContext)
 				return
 			}
 

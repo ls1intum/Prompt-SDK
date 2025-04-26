@@ -17,7 +17,7 @@ func TestGetTokenUser_NoTokenSet(t *testing.T) {
 		t.Errorf("expected ok=false, got true")
 	}
 	if !reflect.DeepEqual(token, TokenUser{}) {
-		t.Errorf("expected zero value TokenStudent, got %#v", token)
+		t.Errorf("expected zero value TokenUser, got %#v", token)
 	}
 }
 
