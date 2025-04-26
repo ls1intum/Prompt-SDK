@@ -1,7 +1,6 @@
 package promptSDK
 
 import (
-	"net/url"
 	"testing"
 
 	"github.com/google/uuid"
@@ -32,13 +31,9 @@ func TestGetEndpointPath(t *testing.T) {
 }
 
 func TestBuildURL_NoExtraPaths(t *testing.T) {
-	base, err := url.Parse("https://example-prompt.com/api")
-	if err != nil {
-		t.Fatal(err)
-	}
 	id := uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")
 	res := Resolution{
-		BaseURL:       *base,
+		BaseURL:       "https://example-prompt.com/api",
 		CoursePhaseID: id,
 		EndpointPath:  "/my-endpoint/",
 	}
@@ -48,13 +43,9 @@ func TestBuildURL_NoExtraPaths(t *testing.T) {
 }
 
 func TestBuildURL_WithExtraPaths(t *testing.T) {
-	base, err := url.Parse("http://localhost:8080/v1")
-	if err != nil {
-		t.Fatal(err)
-	}
 	id := uuid.MustParse("00000000-0000-0000-0000-000000000000")
 	res := Resolution{
-		BaseURL:       *base,
+		BaseURL:       "http://localhost:8080/v1",
 		CoursePhaseID: id,
 		EndpointPath:  "endpoint",
 	}
@@ -65,13 +56,12 @@ func TestBuildURL_WithExtraPaths(t *testing.T) {
 
 func TestBuildURL_WithInvalidBaseURL(t *testing.T) {
 	// Test with an invalid URL that would cause issues
-	invalidBase := url.URL{Scheme: ":%invalid"} // Invalid scheme
 	res := Resolution{
-		BaseURL:       invalidBase,
+		BaseURL:       ":%invalid",
 		CoursePhaseID: uuid.New(),
 		EndpointPath:  "endpoint",
 	}
 	got := buildURL(res)
 	// Verify the function gracefully handles invalid URLs
-	assert.NotEmpty(t, got)
+	assert.Empty(t, got)
 }

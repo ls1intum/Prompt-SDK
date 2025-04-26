@@ -13,7 +13,7 @@ import (
 
 type Resolution struct {
 	DtoName       string
-	BaseURL       url.URL
+	BaseURL       string
 	EndpointPath  string
 	CoursePhaseID uuid.UUID
 }
@@ -37,8 +37,12 @@ func buildURL(resolution Resolution, extraPaths ...string) string {
 		getEndpointPath(resolution.EndpointPath),
 	}, extraPaths...)
 
-	u := resolution.BaseURL.JoinPath(allPaths...)
-	return u.String()
+	u, err := url.JoinPath(resolution.BaseURL, allPaths...)
+	if err != nil {
+		log.Error("Failed to build URL: ", err)
+		return ""
+	}
+	return u
 }
 
 // parseAndValidate unmarshals the data into a map and ensures the expected key exists.
