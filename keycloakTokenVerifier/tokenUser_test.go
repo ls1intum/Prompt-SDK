@@ -9,24 +9,24 @@ import (
 	"github.com/google/uuid"
 )
 
-func TestGetTokenStudent_NoTokenSet(t *testing.T) {
+func TestGetTokenUser_NoTokenSet(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	c, _ := gin.CreateTestContext(httptest.NewRecorder())
-	token, ok := GetTokenStudent(c)
+	token, ok := GetTokenUser(c)
 	if ok {
 		t.Errorf("expected ok=false, got true")
 	}
-	if !reflect.DeepEqual(token, TokenStudent{}) {
+	if !reflect.DeepEqual(token, TokenUser{}) {
 		t.Errorf("expected zero value TokenStudent, got %#v", token)
 	}
 }
 
-func TestSetAndGetTokenStudent(t *testing.T) {
+func TestSetAndGetTokenUser(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	c, _ := gin.CreateTestContext(httptest.NewRecorder())
 
 	courseID := uuid.New()
-	expected := TokenStudent{
+	expected := TokenUser{
 		Roles:                  map[string]bool{"admin": true, "user": false},
 		ID:                     uuid.New().String(),
 		Email:                  "student@example.com",
@@ -42,8 +42,8 @@ func TestSetAndGetTokenStudent(t *testing.T) {
 		CustomRolePrefix:       "custom_",
 	}
 
-	SetTokenStudent(c, expected)
-	got, ok := GetTokenStudent(c)
+	SetTokenUser(c, expected)
+	got, ok := GetTokenUser(c)
 	if !ok {
 		t.Fatalf("expected ok=true, got false")
 	}

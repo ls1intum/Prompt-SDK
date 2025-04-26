@@ -7,13 +7,13 @@ import (
 	"github.com/google/uuid"
 )
 
-const tokenStudentContextKey = "token_student"
+const tokenUserContextKey = "tokenUser"
 
-var ErrStudentNotInContext = errors.New("student not found in context")
+var ErrStudentNotInContext = errors.New("user not found in context")
 
-// TokenStudent encapsulates a user's authentication information, including roles,
+// TokenUser encapsulates a user's authentication information, including roles,
 // personal identifiers, and permissions within the system.
-type TokenStudent struct {
+type TokenUser struct {
 	Roles               map[string]bool
 	ID                  string
 	Email               string
@@ -31,17 +31,17 @@ type TokenStudent struct {
 	CustomRolePrefix string
 }
 
-func GetTokenStudent(c *gin.Context) (TokenStudent, bool) {
-	if tokenStudent, exists := c.Get(tokenStudentContextKey); exists {
-		ts, ok := tokenStudent.(TokenStudent)
+func GetTokenUser(c *gin.Context) (TokenUser, bool) {
+	if tokenUser, exists := c.Get(tokenUserContextKey); exists {
+		ts, ok := tokenUser.(TokenUser)
 		if !ok {
-			return TokenStudent{}, false
+			return TokenUser{}, false
 		}
 		return ts, true
 	}
-	return TokenStudent{}, false
+	return TokenUser{}, false
 }
 
-func SetTokenStudent(c *gin.Context, tokenStudent TokenStudent) {
-	c.Set(tokenStudentContextKey, tokenStudent)
+func SetTokenUser(c *gin.Context, tokenUser TokenUser) {
+	c.Set(tokenUserContextKey, tokenUser)
 }

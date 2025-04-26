@@ -91,7 +91,7 @@ func KeycloakMiddleware() gin.HandlerFunc {
 		c.Set("firstName", firstName)
 		c.Set("lastName", lastName)
 
-		SetTokenStudent(c, TokenStudent{
+		SetTokenUser(c, TokenUser{
 			Roles:               userRoles,
 			ID:                  userID,
 			Email:               userEmail,

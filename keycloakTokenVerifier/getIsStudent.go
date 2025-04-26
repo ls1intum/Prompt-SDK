@@ -44,16 +44,16 @@ func isStudentOfCoursePhaseMiddleware() gin.HandlerFunc {
 			c.Set("isStudentOfCoursePhase", isStudentResponse.IsStudentOfCoursePhase)
 			c.Set("courseParticipationID", isStudentResponse.CourseParticipationID)
 
-			tokenStudent, ok := GetTokenStudent(c)
+			tokenUser, ok := GetTokenUser(c)
 			if !ok {
 				log.Error("Error getting token student")
 				_ = c.AbortWithError(http.StatusInternalServerError, ErrStudentNotInContext)
 				return
 			}
-			tokenStudent.IsStudentOfCourse = true
-			tokenStudent.IsStudentOfCoursePhase = isStudentResponse.IsStudentOfCoursePhase
-			tokenStudent.CourseParticipationID = isStudentResponse.CourseParticipationID
-			SetTokenStudent(c, tokenStudent)
+			tokenUser.IsStudentOfCourse = true
+			tokenUser.IsStudentOfCoursePhase = isStudentResponse.IsStudentOfCoursePhase
+			tokenUser.CourseParticipationID = isStudentResponse.CourseParticipationID
+			SetTokenUser(c, tokenUser)
 		}
 	}
 }

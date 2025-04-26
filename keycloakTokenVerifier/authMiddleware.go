@@ -25,13 +25,13 @@ func AuthenticationMiddleware(allowedRoles ...string) gin.HandlerFunc {
 
 		allowedSet := buildAllowedRolesSet(allowedRoles)
 
-		tokenStudent, ok := GetTokenStudent(c)
+		tokenUser, ok := GetTokenUser(c)
 		if !ok {
 			log.Error("Error getting token student")
 			c.AbortWithStatusJSON(http.StatusUnauthorized, ErrStudentNotInContext)
 			return
 		}
-		userRoles := tokenStudent.Roles
+		userRoles := tokenUser.Roles
 
 		// 1.) Directly grant access for PROMPT_Admin or PROMPT_Lecturer.
 		if checkDirectRole(PromptAdmin, allowedSet, userRoles) ||
@@ -53,25 +53,25 @@ func AuthenticationMiddleware(allowedRoles ...string) gin.HandlerFunc {
 				return
 			}
 
-			tokenStudent, ok = GetTokenStudent(c)
+			tokenUser, ok = GetTokenUser(c)
 			if !ok {
 				log.Error("Error refreshing the token student")
 				c.AbortWithStatusJSON(http.StatusUnauthorized, ErrStudentNotInContext)
 				return
 			}
 
-			if _, allowed := allowedSet[CourseLecturer]; allowed && tokenStudent.IsLecturer {
+			if _, allowed := allowedSet[CourseLecturer]; allowed && tokenUser.IsLecturer {
 				c.Next()
 				return
 			}
 
-			if _, allowed := allowedSet[CourseEditor]; allowed && tokenStudent.IsEditor {
+			if _, allowed := allowedSet[CourseEditor]; allowed && tokenUser.IsEditor {
 				c.Next()
 				return
 			}
 
 			if containsCustomRoleName(allowedRoles...) {
-				prefix := tokenStudent.CustomRolePrefix
+				prefix := tokenUser.CustomRolePrefix
 
 				for _, role := range allowedRoles {
 					if userRoles[prefix+role] {
@@ -89,14 +89,14 @@ func AuthenticationMiddleware(allowedRoles ...string) gin.HandlerFunc {
 				return
 			}
 
-			tokenStudent, ok = GetTokenStudent(c)
+			tokenUser, ok = GetTokenUser(c)
 			if !ok {
 				log.Error("Error refreshing the token student")
 				c.AbortWithStatusJSON(http.StatusUnauthorized, ErrStudentNotInContext)
 				return
 			}
 
-			if tokenStudent.IsStudentOfCourse {
+			if tokenUser.IsStudentOfCourse {
 				c.Next()
 				return
 			}
