@@ -12,8 +12,15 @@ func init() {
 	validate = validator.New()
 	validate.SetTagName("binding")
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
-		v.RegisterValidation("matriculation", MatriculationNumberValidator)
-		v.RegisterValidation("tumid", TUMIDValidator)
+		var err error
+		err = v.RegisterValidation("matriculation", MatriculationNumberValidator)
+		if err != nil {
+			panic(err)
+		}
+		err = v.RegisterValidation("tumid", TUMIDValidator)
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 
