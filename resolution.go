@@ -11,20 +11,20 @@ import (
 )
 
 type Resolution struct {
-	DtoName       string
-	BaseURL       string
-	EndpointPath  string
-	CoursePhaseID uuid.UUID
+	DtoName       string    `json:"dtoName" binding:"required"`
+	BaseURL       string    `json:"baseURL" binding:"required,url"`
+	EndpointPath  string    `json:"endpointPath" binding:"required"`
+	CoursePhaseID uuid.UUID `json:"coursePhaseID" binding:"required,uuid"`
 }
 
 type CoursePhaseParticipationsWithResolutions struct {
 	Participations []promptTypes.CoursePhaseParticipationWithStudent `json:"participations"`
-	Resolutions    []Resolution                                      `json:"resolutions"`
+	Resolutions    []Resolution                                      `json:"resolutions" binding:"dive"`
 }
 
 type PrevCoursePhaseData struct {
 	PrevData    promptTypes.MetaData `json:"prevData"`
-	Resolutions []Resolution         `json:"resolutions"`
+	Resolutions []Resolution         `json:"resolutions" binding:"dive"`
 }
 
 // buildURL constructs the request URL for a given resolution.

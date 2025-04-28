@@ -6,16 +6,16 @@ import (
 )
 
 type Student struct {
-	ID                   uuid.UUID   `json:"id"`
+	ID                   uuid.UUID   `json:"id" binding:"uuid"`
 	FirstName            string      `json:"firstName"`
 	LastName             string      `json:"lastName"`
-	Email                string      `json:"email"`
-	MatriculationNumber  string      `json:"matriculationNumber"`
-	UniversityLogin      string      `json:"universityLogin"`
+	Email                string      `json:"email" binding:"email"`
+	MatriculationNumber  string      `json:"matriculationNumber" binding:"matriculationNumber"`
+	UniversityLogin      string      `json:"universityLogin" binding:"tumid"`
 	HasUniversityAccount bool        `json:"hasUniversityAccount"`
-	Gender               Gender      `json:"gender"`
+	Gender               Gender      `json:"gender" binding:"oneof=male female diverse prefer_not_to_say"`
 	Nationality          string      `json:"nationality"`
-	StudyDegree          StudyDegree `json:"studyDegree"`
+	StudyDegree          StudyDegree `json:"studyDegree" binding:"oneof=bachelor master"`
 	StudyProgram         string      `json:"studyProgram"`
 	CurrentSemester      pgtype.Int4 `json:"currentSemester"`
 }
