@@ -3,14 +3,16 @@ package keycloakCoreRequests
 import (
 	"encoding/json"
 	"net/http"
+	"net/url"
+	"path"
 
 	"github.com/google/uuid"
 	"github.com/ls1intum/prompt-sdk/keycloakTokenVerifier/keycloakTokenVerifierDTO"
 	log "github.com/sirupsen/logrus"
 )
 
-func SendCoursePhaseRoleMappingRequest(coreURL, authHeader string, coursePhaseID uuid.UUID) (keycloakTokenVerifierDTO.GetCourseRoles, error) {
-	path := "/api/auth/course_phase/" + coursePhaseID.String() + "/roles"
+func SendCoursePhaseRoleMappingRequest(coreURL url.URL, authHeader string, coursePhaseID uuid.UUID) (keycloakTokenVerifierDTO.GetCourseRoles, error) {
+	path := path.Join("/api/auth/course_phase", coursePhaseID.String(), "roles")
 
 	resp, err := sendRequest(coreURL, "GET", path, authHeader, nil)
 	if err != nil {

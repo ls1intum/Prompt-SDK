@@ -48,6 +48,16 @@ var validate *validator.Validate
 func init() {
 	validate = validator.New()
 	validate.SetTagName("binding")
+
+	// Register with local validate instance first
+	if err := validate.RegisterValidation("matriculationNumber", MatriculationNumberValidator); err != nil {
+		panic(fmt.Sprintf("Failed to register local matriculationNumber validator: %v", err))
+	}
+	if err := validate.RegisterValidation("tumid", TUMIDValidator); err != nil {
+		panic(fmt.Sprintf("Failed to register local tumid validator: %v", err))
+	}
+
+	// Also register with Gin's validator engine
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
 		if err := v.RegisterValidation("matriculationNumber", MatriculationNumberValidator); err != nil {
 			panic(fmt.Sprintf("Failed to register matriculationNumber validator: %v", err))

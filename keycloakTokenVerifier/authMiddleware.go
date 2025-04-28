@@ -1,7 +1,6 @@
 package keycloakTokenVerifier
 
 import (
-	"fmt"
 	"net/http"
 	"slices"
 
@@ -26,15 +25,17 @@ func AuthenticationMiddleware(allowedRoles ...string) gin.HandlerFunc {
 
 		allowedSet := buildAllowedRolesSet(allowedRoles)
 
-		userRoles, err := getUserRoles(c)
-		if err != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		tokenUser, ok := GetTokenUser(c)
+		if !ok {
+			log.Error("Error getting token student")
+			c.AbortWithStatusJSON(http.StatusUnauthorized, ErrUserNotInContext)
 			return
 		}
+		userRoles := tokenUser.Roles
 
 		// 1.) Directly grant access for PROMPT_Admin or PROMPT_Lecturer.
-		if checkDirectRole("PROMPT_Admin", allowedSet, userRoles) ||
-			checkDirectRole("PROMPT_Lecturer", allowedSet, userRoles) {
+		if checkDirectRole(PromptAdmin, allowedSet, userRoles) ||
+			checkDirectRole(PromptLecturer, allowedSet, userRoles) {
 			c.Next()
 			return
 		}
@@ -52,23 +53,25 @@ func AuthenticationMiddleware(allowedRoles ...string) gin.HandlerFunc {
 				return
 			}
 
-			if _, allowed := allowedSet[CourseLecturer]; allowed && isFlagTrue(c, "isLecturer") {
+			tokenUser, ok = GetTokenUser(c)
+			if !ok {
+				log.Error("Error refreshing the token student")
+				c.AbortWithStatusJSON(http.StatusUnauthorized, ErrUserNotInContext)
+				return
+			}
+
+			if _, allowed := allowedSet[CourseLecturer]; allowed && tokenUser.IsLecturer {
 				c.Next()
 				return
 			}
 
-			if _, allowed := allowedSet[CourseEditor]; allowed && isFlagTrue(c, "isEditor") {
+			if _, allowed := allowedSet[CourseEditor]; allowed && tokenUser.IsEditor {
 				c.Next()
 				return
 			}
 
 			if containsCustomRoleName(allowedRoles...) {
-				prefix, err := getCustomRolePrefix(c)
-				if err != nil {
-					log.Error(err)
-					c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "could not authenticate"})
-					return
-				}
+				prefix := tokenUser.CustomRolePrefix
 
 				for _, role := range allowedRoles {
 					if userRoles[prefix+role] {
@@ -86,7 +89,14 @@ func AuthenticationMiddleware(allowedRoles ...string) gin.HandlerFunc {
 				return
 			}
 
-			if isFlagTrue(c, "isStudentOfCoursePhase") {
+			tokenUser, ok = GetTokenUser(c)
+			if !ok {
+				log.Error("Error refreshing the token student")
+				c.AbortWithStatusJSON(http.StatusUnauthorized, ErrUserNotInContext)
+				return
+			}
+
+			if tokenUser.IsStudentOfCourse {
 				c.Next()
 				return
 			}
@@ -106,48 +116,12 @@ func buildAllowedRolesSet(roles []string) map[string]struct{} {
 	return set
 }
 
-// getUserRoles retrieves the user roles from the gin.Context.
-func getUserRoles(c *gin.Context) (map[string]bool, error) {
-	val, exists := c.Get("userRoles")
-	if !exists {
-		return nil, fmt.Errorf("user roles not found")
-	}
-	roles, ok := val.(map[string]bool)
-	if !ok {
-		return nil, fmt.Errorf("user roles invalid type")
-	}
-	return roles, nil
-}
-
 // checkDirectRole returns true if a specific role is both allowed and present in the user roles.
 func checkDirectRole(role string, allowedSet map[string]struct{}, userRoles map[string]bool) bool {
 	if _, allowed := allowedSet[role]; allowed && userRoles[role] {
 		return true
 	}
 	return false
-}
-
-// isFlagTrue checks whether a boolean flag stored in the gin.Context is true.
-func isFlagTrue(c *gin.Context, key string) bool {
-	if val, exists := c.Get(key); exists {
-		if flag, ok := val.(bool); ok && flag {
-			return true
-		}
-	}
-	return false
-}
-
-// getCustomRolePrefix retrieves the customRolePrefix from the gin.Context.
-func getCustomRolePrefix(c *gin.Context) (string, error) {
-	val, exists := c.Get("customRolePrefix")
-	if !exists {
-		return "", fmt.Errorf("customRolePrefix not found")
-	}
-	prefix, ok := val.(string)
-	if !ok {
-		return "", fmt.Errorf("customRolePrefix invalid type")
-	}
-	return prefix, nil
 }
 
 // requiresLecturerOrCustom determines if additional checks for lecturer, editor,
@@ -174,7 +148,7 @@ func containsCustomRoleName(allowedRoles ...string) bool {
 // "PROMPT_Admin" and/or "PROMPT_Lecturer".
 func onlyContainsAdminAndLecturer(allowedSet map[string]struct{}) bool {
 	for role := range allowedSet {
-		if role != "PROMPT_Admin" && role != "PROMPT_Lecturer" {
+		if role != PromptAdmin && role != PromptLecturer {
 			return false
 		}
 	}

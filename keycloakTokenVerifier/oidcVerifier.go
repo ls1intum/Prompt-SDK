@@ -15,9 +15,9 @@ func InitKeycloakVerifier() error {
 
 	// Construct the provider URL. Keycloak hosts OIDC metadata at:
 	//   {BaseURL}/realms/{Realm}/.well-known/openid-configuration
-	providerURL := fmt.Sprintf("%s/realms/%s", KeycloakTokenVerifierSingleton.KeycloakURL, KeycloakTokenVerifierSingleton.Realm)
+	providerURL := KeycloakTokenVerifierSingleton.KeycloakURL.JoinPath("realms", KeycloakTokenVerifierSingleton.Realm)
 
-	provider, err := oidc.NewProvider(ctx, providerURL)
+	provider, err := oidc.NewProvider(ctx, providerURL.String())
 	if err != nil {
 		return fmt.Errorf("failed to create new OIDC provider: %w", err)
 	}

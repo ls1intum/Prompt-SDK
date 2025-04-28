@@ -1,7 +1,9 @@
 package keycloakTokenVerifier
 
-const PromptAdmin = "PROMPT_Admin"
-const PromptLecturer = "PROMPT_Lecturer"
-const CourseLecturer = "Lecturer"
-const CourseEditor = "Editor"
-const CourseStudent = "Student"
+const (
+	PromptAdmin    = "PROMPT_Admin"
+	PromptLecturer = "PROMPT_Lecturer"
+	CourseLecturer = "Lecturer"
+	CourseEditor   = "Editor"
+	CourseStudent  = "Student"
+)

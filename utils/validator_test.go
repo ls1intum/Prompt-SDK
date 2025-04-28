@@ -2,20 +2,12 @@ package utils
 
 import (
 	"testing"
-
-	"github.com/gin-gonic/gin/binding"
-	"github.com/go-playground/validator/v10"
 )
 
 // This test checks if the custom validators are registered correctly using the init function.
 func TestInitRegistersValidators(t *testing.T) {
-	v, ok := binding.Validator.Engine().(*validator.Validate)
-	if !ok {
-		t.Fatal("could not get validator engine")
-	}
-
 	type TestStruct struct {
-		Matriculation string `binding:"matriculation"`
+		Matriculation string `binding:"matriculationNumber"`
 		TUMID         string `binding:"tumid"`
 	}
 
@@ -33,7 +25,7 @@ func TestInitRegistersValidators(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := v.Struct(tt.input)
+			err := ValidateStruct(tt.input)
 			if (err != nil) != tt.wantError {
 				t.Errorf("input: %+v, got error = %v, wantError = %v", tt.input, err, tt.wantError)
 			}
@@ -43,11 +35,8 @@ func TestInitRegistersValidators(t *testing.T) {
 
 // TestMatriculationNumberValidator tests the MatriculationNumberValidator function.
 func TestMatriculationNumberValidator(t *testing.T) {
-	validate := validator.New()
-	_ = validate.RegisterValidation("matriculation", MatriculationNumberValidator)
-
 	type TestStruct struct {
-		MatriculationNumber string `validate:"matriculation"`
+		MatriculationNumber string `binding:"matriculationNumber"`
 	}
 
 	tests := []struct {
@@ -67,7 +56,7 @@ func TestMatriculationNumberValidator(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			test := TestStruct{MatriculationNumber: tt.input}
-			err := validate.Struct(test)
+			err := ValidateStruct(test)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("got error = %v, wantErr = %v", err, tt.wantErr)
 			}
@@ -77,11 +66,8 @@ func TestMatriculationNumberValidator(t *testing.T) {
 
 // TestTUMIDValidator tests the TUMIDValidator function.
 func TestTUMIDValidator(t *testing.T) {
-	validate := validator.New()
-	_ = validate.RegisterValidation("tumid", TUMIDValidator)
-
 	type TestStruct struct {
-		TUMID string `validate:"tumid"`
+		TUMID string `binding:"tumid"`
 	}
 
 	tests := []struct {
@@ -105,7 +91,7 @@ func TestTUMIDValidator(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			test := TestStruct{TUMID: tt.input}
-			err := validate.Struct(test)
+			err := ValidateStruct(test)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("input: %q, got error = %v, wantErr = %v", tt.input, err, tt.wantErr)
 			}

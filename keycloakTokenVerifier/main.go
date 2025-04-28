@@ -1,28 +1,47 @@
 package keycloakTokenVerifier
 
-import "github.com/sirupsen/logrus"
+import (
+	"net/url"
+
+	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
+)
 
 type KeycloakTokenVerifier struct {
-	KeycloakURL             string
+	KeycloakURL             url.URL
 	Realm                   string
 	ClientID                string
 	expectedAuthorizedParty string
-	CoreURL                 string
+	CoreURL                 url.URL
 }
 
 var KeycloakTokenVerifierSingleton *KeycloakTokenVerifier
 
 func InitKeycloakTokenVerifier(KeycloakURL, Realm, CoreURL string) error {
+	// Parse the Keycloak URL
+	keycloakURL, err := url.Parse(KeycloakURL)
+	if err != nil {
+		log.Error("Failed to parse Keycloak URL: ", err)
+		return err
+	}
+
+	// Parse the Core URL
+	coreURL, err := url.Parse(CoreURL)
+	if err != nil {
+		log.Error("Failed to parse Core URL: ", err)
+		return err
+	}
+
 	KeycloakTokenVerifierSingleton = &KeycloakTokenVerifier{
-		KeycloakURL:             KeycloakURL,
+		KeycloakURL:             *keycloakURL,
 		Realm:                   Realm,
 		ClientID:                "prompt-server",
 		expectedAuthorizedParty: "prompt-client",
-		CoreURL:                 CoreURL,
+		CoreURL:                 *coreURL,
 	}
 
 	// init the middleware
-	err := InitKeycloakVerifier()
+	err = InitKeycloakVerifier()
 	if err != nil {
 		logrus.Error("Failed to initialize keycloak verifier: ", err)
 		return err
