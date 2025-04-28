@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"fmt"
+
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
 )
@@ -12,14 +14,11 @@ func init() {
 	validate = validator.New()
 	validate.SetTagName("binding")
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
-		var err error
-		err = v.RegisterValidation("matriculation", MatriculationNumberValidator)
-		if err != nil {
-			panic(err)
+		if err := v.RegisterValidation("matriculationNumber", MatriculationNumberValidator); err != nil {
+			panic(fmt.Sprintf("Failed to register matriculationNumber validator: %v", err))
 		}
-		err = v.RegisterValidation("tumid", TUMIDValidator)
-		if err != nil {
-			panic(err)
+		if err := v.RegisterValidation("tumid", TUMIDValidator); err != nil {
+			panic(fmt.Sprintf("Failed to register tumid validator: %v", err))
 		}
 	}
 }
