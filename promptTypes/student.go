@@ -11,7 +11,7 @@ type Student struct {
 	LastName             string      `json:"lastName"`
 	Email                string      `json:"email" binding:"email"`
 	MatriculationNumber  string      `json:"matriculationNumber" binding:"matriculationNumber"`
-	UniversityLogin      string      `json:"universityLogin" binding:"tumid"`
+	UniversityLogin      string      `json:"universityLogin" binding:"universityLogin"`
 	HasUniversityAccount bool        `json:"hasUniversityAccount"`
 	Gender               Gender      `json:"gender" binding:"oneof=male female diverse prefer_not_to_say"`
 	Nationality          string      `json:"nationality"`

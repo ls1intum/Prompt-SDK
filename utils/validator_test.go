@@ -8,7 +8,7 @@ import (
 func TestInitRegistersValidators(t *testing.T) {
 	type TestStruct struct {
 		Matriculation string `binding:"matriculationNumber"`
-		TUMID         string `binding:"tumid"`
+		TUMID         string `binding:"universityLogin"`
 	}
 
 	tests := []struct {
@@ -67,7 +67,7 @@ func TestMatriculationNumberValidator(t *testing.T) {
 // TestTUMIDValidator tests the TUMIDValidator function.
 func TestTUMIDValidator(t *testing.T) {
 	type TestStruct struct {
-		TUMID string `binding:"tumid"`
+		TUMID string `binding:"universityLogin"`
 	}
 
 	tests := []struct {

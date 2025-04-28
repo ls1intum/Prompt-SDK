@@ -5,15 +5,15 @@ package utils
 // that integrate with the gin-gonic/gin framework and go-playground/validator.
 //
 // Available validators:
-//   - matriculationNumber: Validates TUM matriculation numbers (8 digits starting with '0')
-//   - tumid: Validates TUM IDs (format: aa00aaa where 'a' is a lowercase letter and '0' is a digit)
+//   - matriculationNumber: Default validates TUM matriculation numbers (8 digits starting with '0')
+//   - universityLogin: Default validates IDs (format: aa00aaa where 'a' is a lowercase letter and '0' is a digit)
 //
 // Usage with struct tags:
 //   import "github.com/your-org/Prompt-SDK/utils"
 //
 //   type Student struct {
 //     MatriculationNumber string `binding:"required,matriculationNumber"`
-//     UniversityLogin     string `binding:"required,tumid"`
+//     UniversityLogin     string `binding:"required,universityLogin"`
 //   }
 //
 // Usage with Gin framework:
@@ -32,6 +32,17 @@ package utils
 //   student := Student{...}
 //   if err := utils.ValidateStruct(student); err != nil {
 //     // Handle validation error
+//   }
+//
+// Override default validators:
+//   import "github.com/your-org/Prompt-SDK/utils"
+//
+//   func CustomMatriculationNumberValidator(fl validator.FieldLevel) bool {
+//     // Custom validation logic...
+//   }
+//
+//   func main() {
+//     utils.RegisterValidation("matriculationNumber", CustomMatriculationNumberValidator)
 //   }
 
 import (
@@ -53,8 +64,8 @@ func init() {
 	if err := validate.RegisterValidation("matriculationNumber", MatriculationNumberValidator); err != nil {
 		panic(fmt.Sprintf("Failed to register local matriculationNumber validator: %v", err))
 	}
-	if err := validate.RegisterValidation("tumid", TUMIDValidator); err != nil {
-		panic(fmt.Sprintf("Failed to register local tumid validator: %v", err))
+	if err := validate.RegisterValidation("universityLogin", TUMIDValidator); err != nil {
+		panic(fmt.Sprintf("Failed to register local universityLogin validator: %v", err))
 	}
 
 	// Also register with Gin's validator engine
@@ -62,10 +73,14 @@ func init() {
 		if err := v.RegisterValidation("matriculationNumber", MatriculationNumberValidator); err != nil {
 			panic(fmt.Sprintf("Failed to register matriculationNumber validator: %v", err))
 		}
-		if err := v.RegisterValidation("tumid", TUMIDValidator); err != nil {
-			panic(fmt.Sprintf("Failed to register tumid validator: %v", err))
+		if err := v.RegisterValidation("universityLogin", TUMIDValidator); err != nil {
+			panic(fmt.Sprintf("Failed to register universityLogin validator: %v", err))
 		}
 	}
+}
+
+func RegisterValidation(tag string, fn validator.Func) error {
+	return validate.RegisterValidation(tag, fn)
 }
 
 // ValidateStruct validates a struct using the shared validator instance
@@ -122,7 +137,7 @@ func TUMIDValidator(fl validator.FieldLevel) bool {
 	}
 
 	for i := 0; i < 2; i++ { // first two letters
-		if tumID[i] < 'a' || tumID[i] > 'z' {
+		if !unicode.IsLower(rune(tumID[i])) {
 			return false
 		}
 	}
