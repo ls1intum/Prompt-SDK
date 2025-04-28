@@ -4,14 +4,16 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"net/url"
+	"path"
 
 	"github.com/google/uuid"
 	"github.com/ls1intum/prompt-sdk/keycloakTokenVerifier/keycloakTokenVerifierDTO"
 	log "github.com/sirupsen/logrus"
 )
 
-func SendIsStudentRequest(coreURL, authHeader string, coursePhaseID uuid.UUID) (keycloakTokenVerifierDTO.GetCoursePhaseParticipation, error) {
-	path := "/api/auth/course_phase/" + coursePhaseID.String() + "/is_student"
+func SendIsStudentRequest(coreURL url.URL, authHeader string, coursePhaseID uuid.UUID) (keycloakTokenVerifierDTO.GetCoursePhaseParticipation, error) {
+	path := path.Join("/api/auth/course_phase", coursePhaseID.String(), "is_student")
 
 	resp, err := sendRequest(coreURL, "GET", path, authHeader, nil)
 	if err != nil {
