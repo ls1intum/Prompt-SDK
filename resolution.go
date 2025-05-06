@@ -149,6 +149,40 @@ func FetchAndMergeParticipationsWithResolutions(coreURL string, authHeader strin
 	return cppWithRes.Participations, nil
 }
 
+// FetchAndMergeCourseParticipationWithResolution fetches a course participation by its courseParticipationID and enriches it with resolved data.
+func FetchAndMergeCourseParticipationWithResolution(coreURL string, authHeader string, coursePhaseID uuid.UUID, courseParticipationID uuid.UUID) (promptTypes.CoursePhaseParticipationWithStudent, error) {
+	url, err := url.JoinPath(coreURL, "api/course_phases", coursePhaseID.String(), "participations", courseParticipationID.String())
+	if err != nil {
+		return promptTypes.CoursePhaseParticipationWithStudent{}, err
+	}
+	data, err := FetchJSON(url, authHeader)
+	if err != nil {
+		return promptTypes.CoursePhaseParticipationWithStudent{}, err
+	}
+
+	var cppWithRes promptTypes.CoursePhaseParticipationWithStudent
+	if err := json.Unmarshal(data, &cppWithRes); err != nil {
+		return promptTypes.CoursePhaseParticipationWithStudent{}, err
+	}
+
+	resolution := Resolution{
+		BaseURL:       coreURL,
+		CoursePhaseID: coursePhaseID,
+	}
+
+	resolvedData, err := ResolveParticipation(authHeader, resolution, courseParticipationID)
+	if err != nil {
+		return promptTypes.CoursePhaseParticipationWithStudent{}, err
+	}
+
+	if cppWithRes.PrevData == nil {
+		cppWithRes.PrevData = make(promptTypes.MetaData)
+	}
+	cppWithRes.PrevData[resolution.DtoName] = resolvedData
+
+	return cppWithRes, nil
+}
+
 func FetchAndMergeCoursePhaseWithResolution(coreURL string, authHeader string, coursePhaseID uuid.UUID) (promptTypes.MetaData, error) {
 	url, err := url.JoinPath(coreURL, "api/course_phases", coursePhaseID.String(), "course_phase_data")
 	if err != nil {
