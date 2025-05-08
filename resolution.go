@@ -23,6 +23,11 @@ type CoursePhaseParticipationsWithResolutions struct {
 	Resolutions    []Resolution                                      `json:"resolutions"`
 }
 
+type CoursePhaseParticipationWithResolution struct {
+	Participation promptTypes.CoursePhaseParticipationWithStudent `json:"participation"`
+	Resolution    Resolution                                      `json:"resolution"`
+}
+
 type PrevCoursePhaseData struct {
 	PrevData    promptTypes.MetaData `json:"prevData"`
 	Resolutions []Resolution         `json:"resolutions"`
@@ -160,27 +165,23 @@ func FetchAndMergeCourseParticipationWithResolution(coreURL string, authHeader s
 		return promptTypes.CoursePhaseParticipationWithStudent{}, err
 	}
 
-	var cppWithRes promptTypes.CoursePhaseParticipationWithStudent
+	var cppWithRes CoursePhaseParticipationWithResolution
 	if err := json.Unmarshal(data, &cppWithRes); err != nil {
 		return promptTypes.CoursePhaseParticipationWithStudent{}, err
 	}
 
-	resolution := Resolution{
-		BaseURL:       coreURL,
-		CoursePhaseID: coursePhaseID,
-	}
-
-	resolvedData, err := ResolveParticipation(authHeader, resolution, courseParticipationID)
+	resolvedData, err := ResolveParticipation(authHeader, cppWithRes.Resolution, courseParticipationID)
 	if err != nil {
 		return promptTypes.CoursePhaseParticipationWithStudent{}, err
 	}
-
-	if cppWithRes.PrevData == nil {
-		cppWithRes.PrevData = make(promptTypes.MetaData)
+	participation := cppWithRes.Participation
+	if participation.PrevData == nil {
+		participation.PrevData = make(promptTypes.MetaData)
 	}
-	cppWithRes.PrevData[resolution.DtoName] = resolvedData
+	participation.PrevData[cppWithRes.Resolution.DtoName] = resolvedData
 
-	return cppWithRes, nil
+	return participation, nil
+
 }
 
 func FetchAndMergeCoursePhaseWithResolution(coreURL string, authHeader string, coursePhaseID uuid.UUID) (promptTypes.MetaData, error) {
