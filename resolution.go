@@ -23,6 +23,11 @@ type CoursePhaseParticipationsWithResolutions struct {
 	Resolutions    []Resolution                                      `json:"resolutions"`
 }
 
+type CoursePhaseParticipationWithResolution struct {
+	Participation promptTypes.CoursePhaseParticipationWithStudent `json:"participation"`
+	Resolution    Resolution                                      `json:"resolution"`
+}
+
 type PrevCoursePhaseData struct {
 	PrevData    promptTypes.MetaData `json:"prevData"`
 	Resolutions []Resolution         `json:"resolutions"`
@@ -147,6 +152,36 @@ func FetchAndMergeParticipationsWithResolutions(coreURL string, authHeader strin
 	}
 
 	return cppWithRes.Participations, nil
+}
+
+// FetchAndMergeCourseParticipationWithResolution fetches a course participation by its courseParticipationID and enriches it with resolved data.
+func FetchAndMergeCourseParticipationWithResolution(coreURL string, authHeader string, coursePhaseID uuid.UUID, courseParticipationID uuid.UUID) (promptTypes.CoursePhaseParticipationWithStudent, error) {
+	url, err := url.JoinPath(coreURL, "api/course_phases", coursePhaseID.String(), "participations", courseParticipationID.String())
+	if err != nil {
+		return promptTypes.CoursePhaseParticipationWithStudent{}, err
+	}
+	data, err := FetchJSON(url, authHeader)
+	if err != nil {
+		return promptTypes.CoursePhaseParticipationWithStudent{}, err
+	}
+
+	var cppWithRes CoursePhaseParticipationWithResolution
+	if err := json.Unmarshal(data, &cppWithRes); err != nil {
+		return promptTypes.CoursePhaseParticipationWithStudent{}, err
+	}
+
+	resolvedData, err := ResolveParticipation(authHeader, cppWithRes.Resolution, courseParticipationID)
+	if err != nil {
+		return promptTypes.CoursePhaseParticipationWithStudent{}, err
+	}
+	participation := cppWithRes.Participation
+	if participation.PrevData == nil {
+		participation.PrevData = make(promptTypes.MetaData)
+	}
+	participation.PrevData[cppWithRes.Resolution.DtoName] = resolvedData
+
+	return participation, nil
+
 }
 
 func FetchAndMergeCoursePhaseWithResolution(coreURL string, authHeader string, coursePhaseID uuid.UUID) (promptTypes.MetaData, error) {
