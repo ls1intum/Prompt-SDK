@@ -23,7 +23,7 @@ type CoursePhaseParticipationsWithResolutions struct {
 	Resolutions    []Resolution                                      `json:"resolutions" binding:"dive"`
 }
 
-type CoursePhaseParticipationWithResolution struct {
+type CoursePhaseParticipationWithResolutions struct {
 	Participation promptTypes.CoursePhaseParticipationWithStudent `json:"participation"`
 	Resolutions   []Resolution                                    `json:"resolutions"`
 }
@@ -165,7 +165,7 @@ func FetchAndMergeCourseParticipationWithResolution(coreURL string, authHeader s
 		return promptTypes.CoursePhaseParticipationWithStudent{}, err
 	}
 
-	var cppWithRes CoursePhaseParticipationWithResolution
+	var cppWithRes CoursePhaseParticipationWithResolutions
 	if err := json.Unmarshal(data, &cppWithRes); err != nil {
 		return promptTypes.CoursePhaseParticipationWithStudent{}, err
 	}
