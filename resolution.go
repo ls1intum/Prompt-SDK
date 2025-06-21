@@ -171,13 +171,13 @@ func FetchAndMergeCourseParticipationWithResolution(coreURL string, authHeader s
 	}
 
 	for _, res := range cppWithRes.Resolutions {
-		resolvedData, err := ResolveAllParticipations(authHeader, res)
+		resolvedData, err := ResolveParticipation(authHeader, res, courseParticipationID)
 		if err != nil {
 			return promptTypes.CoursePhaseParticipationWithStudent{}, err
 		}
 
 		participation := cppWithRes.Participation
-		if data, exists := resolvedData[participation.CourseParticipationID]; exists {
+		if resolvedData != nil {
 			if participation.PrevData == nil {
 				participation.PrevData = make(promptTypes.MetaData)
 			}
