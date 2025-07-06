@@ -17,8 +17,8 @@ type PhaseCopyHandler interface {
 	HandlePhaseCopy(ctx context.Context, req PhaseCopyRequest) error
 }
 
-func RegisterCopyEndpoint(router *gin.RouterGroup, handler PhaseCopyHandler) {
-	router.POST("/copy", func(c *gin.Context) {
+func RegisterCopyEndpoint(router *gin.RouterGroup, authMiddleware gin.HandlerFunc, handler PhaseCopyHandler) {
+	router.POST("/copy", authMiddleware, func(c *gin.Context) {
 		var req PhaseCopyRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
