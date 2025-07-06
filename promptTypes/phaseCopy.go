@@ -30,6 +30,6 @@ func RegisterCopyEndpoint(router *gin.RouterGroup, authMiddleware gin.HandlerFun
 			return
 		}
 
-		c.Status(http.StatusNoContent)
+		c.JSON(http.StatusOK, gin.H{"success": "Course phase copied successfully"})
 	})
 }
