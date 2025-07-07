@@ -1,7 +1,6 @@
 package promptTypes
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -14,7 +13,7 @@ type PhaseCopyRequest struct {
 }
 
 type PhaseCopyHandler interface {
-	HandlePhaseCopy(ctx context.Context, req PhaseCopyRequest) error
+	HandlePhaseCopy(c *gin.Context, req PhaseCopyRequest) error
 }
 
 func RegisterCopyEndpoint(router *gin.RouterGroup, authMiddleware gin.HandlerFunc, handler PhaseCopyHandler) {
@@ -25,7 +24,7 @@ func RegisterCopyEndpoint(router *gin.RouterGroup, authMiddleware gin.HandlerFun
 			return
 		}
 
-		if err := handler.HandlePhaseCopy(c.Request.Context(), req); err != nil {
+		if err := handler.HandlePhaseCopy(c, req); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
