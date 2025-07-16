@@ -1,14 +1,11 @@
 package promptTypes
 
 import (
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Student struct {
-	ID                   uuid.UUID   `json:"id" binding:"uuid"`
-	FirstName            string      `json:"firstName"`
-	LastName             string      `json:"lastName"`
+	Person
 	Email                string      `json:"email" binding:"email"`
 	MatriculationNumber  string      `json:"matriculationNumber" binding:"matriculationNumber"`
 	UniversityLogin      string      `json:"universityLogin" binding:"universityLogin"`
