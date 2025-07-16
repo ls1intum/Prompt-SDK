@@ -2,7 +2,8 @@ package promptTypes
 
 import "github.com/google/uuid"
 
-type TeamMember struct {
-	CourseParticipationID uuid.UUID `json:"courseParticipationID"`
-	StudentName           string    `json:"studentName"`
+type Person struct {
+	ID        uuid.UUID `json:"id" binding:"uuid"`
+	FirstName string    `json:"firstName"`
+	LastName  string    `json:"lastName"`
 }
