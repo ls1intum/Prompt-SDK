@@ -40,7 +40,7 @@ type Student struct {
 	StudyDegree StudyDegree `json:"studyDegree" binding:"oneof=bachelor master"`
 
 	// StudyProgram is the specific program or major the student is enrolled in.
-	// Examples: "Computer Science", "Information Systems", "Software Engineering".
+	// Examples: "Computer Science", "Information Systems", "Management and Technology".
 	StudyProgram string `json:"studyProgram"`
 
 	// CurrentSemester indicates which semester the student is currently in within their program.

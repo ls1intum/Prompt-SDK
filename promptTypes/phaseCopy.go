@@ -27,7 +27,6 @@ type PhaseCopyHandler interface {
 	// HandlePhaseCopy processes the copying of module-specific data from the source
 	// course phase to the target course phase. Implementations should:
 	//   - Copy relevant settings and configurations
-	//   - Duplicate user data where appropriate
 	//   - Update references and relationships
 	//   - Maintain data integrity and consistency
 	//

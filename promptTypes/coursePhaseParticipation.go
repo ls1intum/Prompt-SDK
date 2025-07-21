@@ -10,7 +10,7 @@ type CoursePhaseParticipationWithStudent struct {
 	CoursePhaseID uuid.UUID `json:"coursePhaseID"`
 
 	// PassStatus indicates the student's current status in this course phase.
-	// Common values include "passed", "failed", "in_progress", or "not_started".
+	// Common values are usually "passed", "failed", and "not_assessed".
 	PassStatus string `json:"passStatus"`
 
 	// CourseParticipationID links this phase participation to the overall course participation.
