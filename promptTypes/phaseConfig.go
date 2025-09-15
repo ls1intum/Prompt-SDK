@@ -14,7 +14,7 @@ type PhaseConfigHandler interface {
 	// It returns a map of configuration settings and their statuses.
 	// The map keys are configuration names, and the values are booleans indicating whether the
 	// setting is configured or is missing in the phase.
-	HandlePhaseConfig() (map[string]bool, error)
+	HandlePhaseConfig(c *gin.Context) (map[string]bool, error)
 }
 
 // RegisterConfigEndpoint registers the standardized GET /config endpoint on the given router group.
@@ -24,7 +24,7 @@ type PhaseConfigHandler interface {
 //	GET /self-team-allocation/api/course_phase/:coursePhaseID/config
 func RegisterConfigEndpoint(router *gin.RouterGroup, authMiddleware gin.HandlerFunc, handler PhaseConfigHandler) {
 	router.GET("/config", authMiddleware, func(c *gin.Context) {
-		response, err := handler.HandlePhaseConfig()
+		response, err := handler.HandlePhaseConfig(c)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
