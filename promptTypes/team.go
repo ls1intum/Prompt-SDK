@@ -6,7 +6,9 @@ import "github.com/google/uuid"
 // This type is used for team-based activities, group projects, and collaborative learning
 // where multiple participants need to be organized and managed as a cohesive unit.
 type Team struct {
-	ID uuid.UUID `json:"id" binding:"uuid"`
+	// ID is the unique identifier for the team.
+	// The uuid.UUID type ensures type safety and automatic validation during JSON unmarshaling.
+	ID uuid.UUID `json:"id"`
 
 	// Name is the display name of the team, used for identification and communication.
 	// This could be assigned automatically (e.g., "Team 1") or chosen by team members.

@@ -7,8 +7,8 @@ import "github.com/google/uuid"
 // students, lecturers, and other participants within the platform.
 type Person struct {
 	// ID is the unique identifier for the person using UUID v4 format.
-	// This field is required and must be a valid UUID.
-	ID uuid.UUID `json:"id" binding:"uuid"`
+	// The uuid.UUID type ensures type safety and automatic validation during JSON unmarshaling.
+	ID uuid.UUID `json:"id"`
 
 	// FirstName stores the first name as provided during initial application or profile updates.
 	FirstName string `json:"firstName"`

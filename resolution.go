@@ -15,7 +15,7 @@ type Resolution struct {
 	DtoName       string    `json:"dtoName" binding:"required"`
 	BaseURL       string    `json:"baseURL" binding:"required,url"`
 	EndpointPath  string    `json:"endpointPath" binding:"required"`
-	CoursePhaseID uuid.UUID `json:"coursePhaseID" binding:"required,uuid"`
+	CoursePhaseID uuid.UUID `json:"coursePhaseID" binding:"required"`
 }
 
 type CoursePhaseParticipationsWithResolutions struct {
