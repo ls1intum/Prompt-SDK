@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"time"
@@ -9,15 +10,13 @@ import (
 )
 
 //nolint:unused // Public SDK function for external use
-func sendCoreRequest(method, subURL, authHeader string, body io.Reader) (*http.Response, error) {
+func sendCoreRequest(method, authHeader string, body io.Reader, url string) (*http.Response, error) {
 	client := &http.Client{Timeout: 10 * time.Second}
 
-	coreURL := GetCoreUrl()
-	requestURL := coreURL + subURL
-	req, err := http.NewRequest(method, requestURL, body)
+	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		log.Error("Error creating request:", err)
-		return nil, err
+		return nil, fmt.Errorf("failed to create HTTP request: %w", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -28,7 +27,7 @@ func sendCoreRequest(method, subURL, authHeader string, body io.Reader) (*http.R
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Error("Error sending request:", err)
-		return nil, err
+		return nil, fmt.Errorf("failed to send HTTP request: %w", err)
 	}
 
 	return resp, nil
