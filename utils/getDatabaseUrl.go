@@ -2,6 +2,7 @@ package utils
 
 import "fmt"
 
+//nolint:unused // Public SDK function for external use
 func getDatabaseURL() string {
 	dbUser := GetEnv("DB_USER", "prompt-postgres")
 	dbPassword := GetEnv("DB_PASSWORD", "prompt-postgres")

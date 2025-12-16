@@ -6,6 +6,7 @@ import (
 	"os/exec"
 )
 
+//nolint:unused // Public SDK function for external use
 func runMigrations(databaseURL string) {
 	cmd := exec.Command("migrate", "-path", "./db/migration", "-database", databaseURL, "up")
 	cmd.Stdout = os.Stdout

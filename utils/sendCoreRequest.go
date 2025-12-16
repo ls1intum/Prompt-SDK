@@ -8,6 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+//nolint:unused // Public SDK function for external use
 func sendCoreRequest(method, subURL, authHeader string, body io.Reader) (*http.Response, error) {
 	client := &http.Client{Timeout: 10 * time.Second}
 
