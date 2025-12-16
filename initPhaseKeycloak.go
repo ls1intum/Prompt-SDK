@@ -7,7 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func initKeycloak() {
+func initPhaseKeycloak() {
 	baseURL := GetEnv("KEYCLOAK_HOST", "http://localhost:8081")
 	if !strings.HasPrefix(baseURL, "http") {
 		log.Warn("Keycloak host does not start with http(s). Adding https:// as prefix.")
