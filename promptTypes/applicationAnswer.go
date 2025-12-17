@@ -5,26 +5,42 @@ import (
 	"fmt"
 )
 
+// Application answer type constants used to distinguish between different answer formats.
 const (
+	// TypeMultiSelect indicates that the answer allows multiple selections from predefined options.
 	TypeMultiSelect = "multiselect"
-	TypeText        = "text"
+	// TypeText indicates that the answer is a free-form text response.
+	TypeText = "text"
 )
 
+// AnswersMultiSelect represents a multi-select application answer where multiple options can be selected.
+// This type is used for application questions that allow students to choose multiple predefined answers.
 type AnswersMultiSelect struct {
-	Type     string   `json:"type"`
-	OrderNum int      `json:"order_num"`
-	Key      string   `json:"key"`
-	Answer   []string `json:"answer"`
+	// Type specifies the answer format, always "multiselect" for this type.
+	Type string `json:"type"`
+	// OrderNum indicates the display order of this question in the application form.
+	OrderNum int `json:"order_num"`
+	// Key is the unique identifier for this question within the application.
+	Key string `json:"key"`
+	// Answer contains the list of selected options from the available choices.
+	Answer []string `json:"answer"`
 }
 
+// AnswersText represents a free-form text application answer.
+// This type is used for application questions that require written responses from students.
 type AnswersText struct {
-	Type     string `json:"type"`
-	OrderNum int    `json:"order_num"`
-	Key      string `json:"key"`
-	Answer   string `json:"answer"`
+	// Type specifies the answer format, always "text" for this type.
+	Type string `json:"type"`
+	// OrderNum indicates the display order of this question in the application form.
+	OrderNum int `json:"order_num"`
+	// Key is the unique identifier for this question within the application.
+	Key string `json:"key"`
+	// Answer contains the student's written response to the question.
+	Answer string `json:"answer"`
 }
 
 // rawAnswer is the intermediate struct used for unmarshaling the raw JSON.
+// This internal type handles the polymorphic nature of answer data during JSON parsing.
 type rawAnswer struct {
 	Type     string      `json:"type"`
 	OrderNum int         `json:"order_num"`
@@ -32,9 +48,13 @@ type rawAnswer struct {
 	Key      string      `json:"key"`
 }
 
-// Allows to parse the answers from the metadata in any later phase.
-// 1) []AnswersText for type="text"
-// 2) []AnswersMultiSelect for type="multiselect"
+// ReadApplicationAnswersFromMetaData parses application answers from metadata.
+// It separates and converts the raw answer data into strongly-typed structures:
+//   - Text answers are returned as []AnswersText for type="text"
+//   - Multi-select answers are returned as []AnswersMultiSelect for type="multiselect"
+//
+// This function handles the polymorphic nature of answer data where the same field
+// can contain either a string (text) or array of strings (multiselect).
 func ReadApplicationAnswersFromMetaData(data interface{}) ([]AnswersText, []AnswersMultiSelect, error) {
 	// Step 1: Marshal interface{} into JSON
 	rawBytes, err := json.Marshal(data)
