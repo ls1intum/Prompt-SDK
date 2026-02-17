@@ -2,8 +2,9 @@ package utils
 
 import "fmt"
 
-//nolint:unused // Public SDK function for external use
-func getDatabaseURL() string {
+// GetDatabaseURL constructs a PostgreSQL connection string from environment variables.
+// It provides sensible defaults for local development.
+func GetDatabaseURL() string {
 	dbUser := GetEnv("DB_USER", "prompt-postgres")
 	dbPassword := GetEnv("DB_PASSWORD", "prompt-postgres")
 	dbHost := GetEnv("DB_HOST", "localhost")

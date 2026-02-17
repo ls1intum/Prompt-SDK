@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -9,11 +10,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-//nolint:unused // Public SDK function for external use
-func sendCoreRequest(method, authHeader string, body io.Reader, url string) (*http.Response, error) {
+// SendCoreRequest sends an HTTP request to the core service with context support for cancellation and timeout control.
+func SendCoreRequest(ctx context.Context, method, authHeader string, body io.Reader, url string) (*http.Response, error) {
 	client := &http.Client{Timeout: 10 * time.Second}
 
-	req, err := http.NewRequest(method, url, body)
+	req, err := http.NewRequestWithContext(ctx, method, url, body)
 	if err != nil {
 		log.Error("Error creating request:", err)
 		return nil, fmt.Errorf("failed to create HTTP request: %w", err)

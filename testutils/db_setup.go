@@ -27,7 +27,7 @@ func SetupTestDB[Q any](ctx context.Context, sqlDumpPath string, queryFactory fu
 			"POSTGRES_DB":       "prompt",
 		},
 		WaitingFor: wait.ForAll(
-			wait.ForLog("database system is ready to accept connections"),
+			wait.ForLog("database system is ready to accept connections").WithOccurrence(2),
 			wait.ForListeningPort("5432/tcp"),
 		),
 	}
@@ -71,7 +71,7 @@ func SetupTestDB[Q any](ctx context.Context, sqlDumpPath string, queryFactory fu
 	}
 
 	// Run the SQL dump
-	if err := runSQLDump(conn, sqlDumpPath); err != nil {
+	if err := runSQLDump(ctx, conn, sqlDumpPath); err != nil {
 		conn.Close()
 		_ = container.Terminate(ctx)
 		return nil, nil, fmt.Errorf("failed to run SQL dump: %w", err)
@@ -92,11 +92,14 @@ func SetupTestDB[Q any](ctx context.Context, sqlDumpPath string, queryFactory fu
 	}, cleanup, nil
 }
 
-func runSQLDump(conn *pgxpool.Pool, path string) error {
+func runSQLDump(ctx context.Context, conn *pgxpool.Pool, path string) error {
 	dump, err := os.ReadFile(path)
 	if err != nil {
 		return fmt.Errorf("could not read SQL dump file: %w", err)
 	}
-	_, err = conn.Exec(context.Background(), string(dump))
-	return err
+	_, err = conn.Exec(ctx, string(dump))
+	if err != nil {
+		return fmt.Errorf("failed to execute SQL dump: %w", err)
+	}
+	return nil
 }

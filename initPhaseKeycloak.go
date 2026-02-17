@@ -1,14 +1,16 @@
 package promptSDK
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/ls1intum/prompt-sdk/utils"
 	log "github.com/sirupsen/logrus"
 )
 
-//nolint:unused // Public SDK function for external use
-func initPhaseKeycloak() {
+// InitPhaseKeycloak initializes the Keycloak authentication middleware using environment variables.
+// It returns an error if the initialization fails instead of using log.Fatal, allowing callers to handle errors.
+func InitPhaseKeycloak() error {
 	baseURL := GetEnv("KEYCLOAK_HOST", "http://localhost:8081")
 	if !strings.HasPrefix(baseURL, "http") {
 		log.Warn("Keycloak host does not start with http(s). Adding https:// as prefix.")
@@ -20,6 +22,7 @@ func initPhaseKeycloak() {
 	coreURL := utils.GetCoreUrl()
 	err := InitAuthenticationMiddleware(baseURL, realm, coreURL)
 	if err != nil {
-		log.Fatalf("Failed to initialize keycloak: %v", err)
+		return fmt.Errorf("failed to initialize keycloak: %w", err)
 	}
+	return nil
 }
